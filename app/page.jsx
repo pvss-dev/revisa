@@ -148,7 +148,7 @@ export default function Home() {
         <p>{authMode === 'register' ? 'Crie sua conta para organizar seus estudos.' : 'Entre para continuar de onde parou.'}</p>
         <form onSubmit={submitAuth} className="auth-form">
           {authMode === 'register' && <label>Seu nome<input autoComplete="name" required minLength={2} maxLength={100} value={authFields.name} onChange={e => setAuthFields({ ...authFields, name: e.target.value })} placeholder="Como podemos chamar você?"/></label>}
-          <label>E-mail<input type="email" autoComplete="email" required value={authFields.email} onChange={e => setAuthFields({ ...authFields, email: e.target.value })} placeholder="voce@exemplo.com"/></label>
+          <label>E-mail<input type="email" autoComplete="email" required value={authFields.email} onChange={e => setAuthFields({ ...authFields, email: e.target.value })} placeholder="seuemail@exemplo.com"/></label>
           <label>Senha<input type="password" autoComplete={authMode === 'register' ? 'new-password' : 'current-password'} required minLength={authMode === 'register' ? 10 : 1} value={authFields.password} onChange={e => setAuthFields({ ...authFields, password: e.target.value })} placeholder={authMode === 'register' ? 'Mínimo de 10 caracteres' : 'Sua senha'}/></label>
           {authError && <div className="form-error">{authError}</div>}
           <button className="button primary full" disabled={authBusy}>{authBusy ? 'Aguarde...' : authMode === 'register' ? 'Criar minha conta' : 'Entrar na minha conta'} <ArrowRight size={18}/></button>
