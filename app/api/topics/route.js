@@ -1,21 +1,23 @@
-import { pool } from '@/lib/db';
+import { prisma } from '@/lib/db';
+import { dateOnly, dateValue } from '@/lib/dates';
 import { authenticated, bodyJson, error, safeMutation } from '@/lib/http';
 import { validTopic } from '@/lib/validation';
 
 export async function GET() {
   const auth = await authenticated();
   if (auth.response) return auth.response;
-  const { rows: topics } = await pool.query(
-    'SELECT id,subject,title,lesson_date AS "lessonDate",practice_date AS "practiceDate",priority,review_offsets AS "reviewOffsets",created_at AS "createdAt" FROM topics WHERE user_id=$1 ORDER BY created_at DESC,id DESC',
-    [auth.user.id]
-  );
-  const { rows: attempts } = await pool.query(
-    'SELECT topic_id AS "topicId",stage,total,correct,completed_at AS "completedAt",imported FROM review_attempts WHERE user_id=$1',
-    [auth.user.id]
-  );
-  const byId = new Map(topics.map(t => [String(t.id), { ...t, attempts: [] }]));
-  attempts.forEach(a => byId.get(String(a.topicId))?.attempts.push(a));
-  return Response.json({ topics: [...byId.values()] }, { headers: { 'Cache-Control': 'no-store' } });
+  const topics = await prisma.topic.findMany({
+    where: { userId: auth.user.id },
+    include: { attempts: true },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+  });
+  return Response.json({ topics: topics.map(t => ({
+    id: t.id, subject: t.subject, title: t.title, lessonDate: dateOnly(t.lessonDate),
+    practiceDate: dateOnly(t.practiceDate), priority: t.priority,
+    reviewOffsets: t.reviewOffsets.length ? t.reviewOffsets : null, createdAt: t.createdAt,
+    attempts: t.attempts.map(a => ({ topicId: a.topicId, stage: a.stage, total: a.total,
+      correct: a.correct, completedAt: dateOnly(a.completedAt), imported: a.imported })),
+  })) }, { headers: { 'Cache-Control': 'no-store' } });
 }
 
 export async function POST(request) {
@@ -25,9 +27,10 @@ export async function POST(request) {
   const body = await bodyJson(request);
   const topic = body && validTopic(body);
   if (!topic) return error('Preencha disciplina, assunto, data das questões e prioridade.');
-  const { rows } = await pool.query(
-    'INSERT INTO topics (user_id,subject,title,lesson_date,practice_date,priority,review_offsets) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id',
-    [auth.user.id, topic.subject, topic.title, topic.lessonDate, topic.practiceDate, topic.priority, topic.reviewOffsets]
-  );
-  return Response.json({ id: rows[0].id }, { status: 201 });
+  const created = await prisma.topic.create({ data: {
+    userId: auth.user.id, subject: topic.subject, title: topic.title,
+    lessonDate: dateValue(topic.lessonDate), practiceDate: dateValue(topic.practiceDate),
+    priority: topic.priority, reviewOffsets: topic.reviewOffsets ?? [],
+  } });
+  return Response.json({ id: created.id }, { status: 201 });
 }

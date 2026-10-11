@@ -16,9 +16,9 @@ A rede informada na VPS é `nginx_local-net`. Use esse valor em `PROXY_NETWORK`.
 
 Assim como no projeto transcriptor, use `VPS_USER=root` e um diretório em `/root/projects`. O workflow cria `/root/projects/revisa` automaticamente; você não precisa enviar arquivos do aplicativo por SCP.
 
-No primeiro deploy, o script gera uma senha aleatória na própria VPS e grava `/root/projects/revisa/.env.production` com permissão `600`. Nos deploys seguintes ele lê e preserva essa senha. O Compose cria o banco `revisa`, o usuário `revisa` e o volume `revisa_postgres_data`. A aplicação acessa o banco pela rede privada `db`.
+No primeiro deploy, o script gera uma senha aleatória na própria VPS e grava `/root/projects/revisa/.env.production` com permissão `600`. Nos deploys seguintes ele lê e preserva essa senha. O Compose cria o banco `revisa`, o usuário `revisa` e o volume `revisa_prisma_postgres_data`. A aplicação acessa o banco pela rede privada `db`.
 
-Guarde uma cópia segura de `.env.production` junto dos backups do banco. Se o volume `revisa_postgres_data` existir mas esse arquivo desaparecer, o workflow interrompe o deploy em vez de gerar outra senha incompatível.
+Guarde uma cópia segura de `.env.production` junto dos backups do banco. Se um dos volumes do Revisa existir mas esse arquivo desaparecer, o workflow interrompe o deploy em vez de gerar outra senha incompatível.
 
 ## 3. Nginx e certificado (já concluídos)
 
@@ -90,13 +90,13 @@ docker compose --env-file .env.production -f docker-compose.yml ps
 docker compose --env-file .env.production -f docker-compose.yml logs --tail=100 db app
 ```
 
-Os serviços `db` e `app` devem ficar `healthy`. Abra `https://revisa.pvss.dev.br/api/health`; a resposta esperada é `{"ok":true}`. Depois teste cadastro, login e importação da planilha no domínio. Se houver erro de banco, confira a senha e os logs de `db`. Se houver erro 502, confira `PROXY_NETWORK`, o alias `revisa-app` e se `app` está `healthy`.
+Os serviços `db` e `app` devem ficar `healthy`. Abra `https://revisa.pvss.dev.br/api/health`; a resposta esperada é `{"ok":true}`. Depois teste cadastro, login e importação da planilha no domínio. O aplicativo executa `prisma migrate deploy` antes de iniciar. Se houver erro de banco ou migração, confira os logs de `app` e `db`. Se houver erro 502, confira `PROXY_NETWORK`, o alias `revisa-app` e se `app` está `healthy`.
 
 ## Atualizações, retorno e dados
 
 Cada push para `main` publica uma imagem identificada pelo commit e a implanta. Para voltar a uma versão, execute manualmente **Actions → Deploy**, informando `sha-` seguido do hash completo do commit anterior. O script tenta restaurar a imagem anterior se a nova não ficar saudável. Migrações do banco não são desfeitas no retorno; faça backup antes de mudanças de esquema.
 
-O banco fica no volume nomeado `revisa_postgres_data`. Não execute `docker compose down -v`, pois isso remove o volume. Inclua o banco `revisa` na sua rotina de backups, por exemplo:
+O banco Prisma fica no volume nomeado `revisa_prisma_postgres_data`. A troca do volume cria um banco vazio e deixa `revisa_postgres_data` disponível para retorno à versão anterior. Após validar a nova versão e confirmar que o volume antigo é dispensável, ele pode ser removido com `docker volume rm revisa_postgres_data`. Não execute `docker compose down -v`, pois isso remove o volume ativo. Inclua o banco `revisa` na sua rotina de backups, por exemplo:
 
 ```bash
 docker compose --env-file .env.production -f docker-compose.yml exec -T db pg_dump -U revisa -Fc revisa > revisa.dump

@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            Int             @id @default(autoincrement())
+  name          String
+  email         String          @unique
+  passwordHash  String          @map("password_hash")
+  reviewOffsets Int[]           @default([7, 21, 60, 100]) @map("review_offsets")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  sessions      Session[]
+  topics        Topic[]
+  attempts      ReviewAttempt[]
+  exams         Exam[]
+
+  @@map("users")
+}
+
+model Session {
+  tokenHash String   @id @db.Char(64) @map("token_hash")
+  userId    Int      @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "sessions_user_idx")
+  @@map("sessions")
+}
+
+model Topic {
+  id            Int             @id @default(autoincrement())
+  userId        Int             @map("user_id")
+  subject       String
+  title         String
+  lessonDate    DateTime?       @db.Date @map("lesson_date")
+  practiceDate  DateTime        @db.Date @map("practice_date")
+  priority      String
+  sourceKey     String?         @map("source_key")
+  reviewOffsets Int[]           @default([]) @map("review_offsets")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attempts      ReviewAttempt[]
+
+  @@unique([userId, sourceKey])
+  @@index([userId, practiceDate], map: "topics_user_practice_idx")
+  @@map("topics")
+}
+
+model ReviewAttempt {
+  id          Int       @id @default(autoincrement())
+  userId      Int       @map("user_id")
+  topicId     Int       @map("topic_id")
+  stage       Int       @db.SmallInt
+  total       Int
+  correct     Int
+  completedAt DateTime? @db.Date @map("completed_at")
+  imported    Boolean   @default(false)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topic       Topic     @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@unique([topicId, stage])
+  @@index([userId], map: "review_attempts_user_idx")
+  @@map("review_attempts")
+}
+
+model Exam {
+  id            Int          @id @default(autoincrement())
+  userId        Int          @map("user_id")
+  title         String
+  examDate      DateTime?    @db.Date @map("exam_date")
+  questionCount Int          @map("question_count")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answers       ExamAnswer[]
+
+  @@index([userId], map: "exams_user_idx")
+  @@map("exams")
+}
+
+model ExamAnswer {
+  examId         Int    @map("exam_id")
+  questionNumber Int    @map("question_number")
+  result         String
+  exam           Exam   @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  @@id([examId, questionNumber])
+  @@map("exam_answers")
+}

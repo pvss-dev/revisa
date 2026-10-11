@@ -31,7 +31,8 @@ if [ -f "$env_file" ]; then
     exit 1
   fi
   postgres_password=$stored_password
-elif docker volume inspect revisa_postgres_data >/dev/null 2>&1; then
+elif docker volume inspect revisa_postgres_data >/dev/null 2>&1 ||
+     docker volume inspect revisa_prisma_postgres_data >/dev/null 2>&1; then
   echo 'The PostgreSQL volume already exists but .env.production is missing. Recover the previous password before deploying.' >&2
   exit 1
 else

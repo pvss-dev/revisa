@@ -1,4 +1,4 @@
-import { pool } from '@/lib/db';
+import { prisma } from '@/lib/db';
 import { authenticated, bodyJson, error, safeMutation } from '@/lib/http';
 import { validReviewOffsets } from '@/lib/validation';
 
@@ -9,6 +9,6 @@ export async function PATCH(request) {
   const body = await bodyJson(request);
   const reviewOffsets = validReviewOffsets(body?.reviewOffsets);
   if (!reviewOffsets) return error('Informe quatro intervalos em dias, em ordem crescente, entre 1 e 3650.');
-  await pool.query('UPDATE users SET review_offsets=$1::integer[] WHERE id=$2', [reviewOffsets, auth.user.id]);
+  await prisma.user.update({ where: { id: auth.user.id }, data: { reviewOffsets } });
   return Response.json({ reviewOffsets });
 }

@@ -46,7 +46,8 @@ services:
 
 volumes:
   postgres_data:
-    name: revisa_postgres_data
+    # Um volume novo inicia o banco Prisma vazio; o anterior pode ser removido após validar o deploy.
+    name: revisa_prisma_postgres_data
 
 networks:
   database:

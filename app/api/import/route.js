@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import ExcelJS from 'exceljs';
-import { pool } from '@/lib/db';
+import { prisma } from '@/lib/db';
+import { dateValue } from '@/lib/dates';
 import { authenticated, error, safeMutation } from '@/lib/http';
 
 function value(cell) {
@@ -39,11 +40,9 @@ export async function POST(request) {
   const sheet = workbook.getWorksheet('CONCURSOS');
   if (!sheet || String(value(sheet.getCell('B1'))).trim() !== 'Assunto') return error('Formato da planilha de revisão não reconhecido.');
   const digest = createHash('sha256').update(buffer).digest('hex');
-  const client = await pool.connect();
   let imported = 0;
   let skipped = 0;
-  try {
-    await client.query('BEGIN');
+  await prisma.$transaction(async tx => {
     for (let row = 2; row <= sheet.rowCount; row++) {
       const subject = String(value(sheet.getCell(`A${row}`)) ?? '').trim();
       const title = String(value(sheet.getCell(`B${row}`)) ?? '').trim();
@@ -53,31 +52,28 @@ export async function POST(request) {
       const rawPriority = String(value(sheet.getCell(`D${row}`)) ?? 'Média').trim();
       const priority = ['Alta','Média','Baixa'].includes(rawPriority) ? rawPriority : 'Média';
       const sourceKey = `${digest}:${row}`;
-      const inserted = await client.query(
-        `INSERT INTO topics (user_id,subject,title,lesson_date,practice_date,priority,source_key)
-         VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (user_id,source_key) DO NOTHING RETURNING id`,
-        [auth.user.id,subject.slice(0,120),title.slice(0,240),lessonDate,practiceDate,priority,sourceKey]
-      );
-      if (!inserted.rowCount) { skipped++; continue; }
+      const inserted = await tx.topic.createMany({
+        data: [{ userId: auth.user.id, subject: subject.slice(0, 120), title: title.slice(0, 240),
+          lessonDate: dateValue(lessonDate), practiceDate: dateValue(practiceDate), priority, sourceKey }],
+        skipDuplicates: true,
+      });
+      if (!inserted.count) { skipped++; continue; }
       imported++;
-      const topicId = inserted.rows[0].id;
+      const topic = await tx.topic.findUniqueOrThrow({
+        where: { userId_sourceKey: { userId: auth.user.id, sourceKey } }, select: { id: true },
+      });
       const stages = [['F','G','H'],['K','L','M'],['P','Q','R'],['U','V','W'],['Z','AA','AB']];
+      const attempts = [];
       for (let stage = 0; stage < 5; stage++) {
         const [flagCol,totalCol,correctCol] = stages[stage];
         const flag = Number(value(sheet.getCell(`${flagCol}${row}`)));
         const total = Number(value(sheet.getCell(`${totalCol}${row}`)));
         const correct = Number(value(sheet.getCell(`${correctCol}${row}`)));
         if (flag !== 1 || !Number.isInteger(total) || total < 1 || !Number.isInteger(correct) || correct < 0 || correct > total) continue;
-        await client.query(
-          'INSERT INTO review_attempts (user_id,topic_id,stage,total,correct,imported) VALUES ($1,$2,$3,$4,$5,true)',
-          [auth.user.id,topicId,stage,total,correct]
-        );
+        attempts.push({ userId: auth.user.id, topicId: topic.id, stage, total, correct, imported: true });
       }
+      if (attempts.length) await tx.reviewAttempt.createMany({ data: attempts });
     }
-    await client.query('COMMIT');
-  } catch (e) {
-    await client.query('ROLLBACK');
-    throw e;
-  } finally { client.release(); }
+  }, { timeout: 120000 });
   return Response.json({ imported, skipped });
 }

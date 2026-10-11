@@ -1,4 +1,4 @@
-import { pool } from '@/lib/db';
+import { prisma } from '@/lib/db';
 import { hashPassword, verifyPassword, issueSession, removeSession } from '@/lib/auth';
 import { bodyJson, error, safeMutation } from '@/lib/http';
 
@@ -22,19 +22,19 @@ export async function POST(request, { params }) {
       return error('Informe um nome e uma senha de 10 a 128 caracteres.');
     }
     try {
-      const { rows } = await pool.query(
-        'INSERT INTO users (name, email, password_hash) VALUES ($1,$2,$3) RETURNING id,name,email,review_offsets AS "reviewOffsets"',
-        [name, email, hashPassword(password)]
-      );
-      await issueSession(rows[0].id);
-      return Response.json({ user: rows[0] }, { status: 201 });
+      const user = await prisma.user.create({
+        data: { name, email, passwordHash: hashPassword(password) },
+        select: { id: true, name: true, email: true, reviewOffsets: true },
+      });
+      await issueSession(user.id);
+      return Response.json({ user }, { status: 201 });
     } catch (e) {
-      if (e.code === '23505') return error('Este e-mail já está cadastrado.', 409);
+      if (e.code === 'P2002') return error('Este e-mail já está cadastrado.', 409);
       throw e;
     }
   }
-  const { rows } = await pool.query('SELECT id,name,email,review_offsets AS "reviewOffsets",password_hash FROM users WHERE email=$1', [email]);
-  if (!rows[0] || !verifyPassword(password, rows[0].password_hash)) return error('E-mail ou senha incorretos.', 401);
-  await issueSession(rows[0].id);
-  return Response.json({ user: { id: rows[0].id, name: rows[0].name, email: rows[0].email, reviewOffsets: rows[0].reviewOffsets } });
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user || !verifyPassword(password, user.passwordHash)) return error('E-mail ou senha incorretos.', 401);
+  await issueSession(user.id);
+  return Response.json({ user: { id: user.id, name: user.name, email: user.email, reviewOffsets: user.reviewOffsets } });
 }

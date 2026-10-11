@@ -4,20 +4,20 @@ Aplicação de revisão espaçada baseada na planilha fornecida. Permite cadastr
 
 ## Desenvolvimento
 
-É necessário um PostgreSQL acessível. Crie `.env` com `DATABASE_URL` apontando para um banco de desenvolvimento (veja `.env.example`) e execute:
+É necessário um PostgreSQL acessível. Crie `.env` com `DATABASE_URL` apontando para um banco de desenvolvimento vazio (veja `.env.example`) e execute:
 
 ```bash
 npm ci
 npm run dev
 ```
 
-Abra `http://localhost:3000`. Para conferir as regras e a compilação: `npm run check` e `npm run build`.
+O comando de desenvolvimento aplica as migrações Prisma antes de iniciar. Abra `http://localhost:3000`. Para conferir as regras e a compilação: `npm run check` e `npm run build`. Mudanças futuras no modelo ficam em `prisma/schema.prisma` e devem gerar uma nova migração com `npx prisma migrate dev --name nome_da_mudanca`.
 
 ## Produção
 
-O arquivo `docker-compose.yml` é exclusivo da produção: sobe a aplicação e um PostgreSQL 18 dedicado no mesmo projeto, usa a rede existente do Nginx e não publica as portas 3000 ou 5432 na VPS. Os dados do banco ficam no volume nomeado `revisa_postgres_data`. A imagem da aplicação é publicada no GitHub Container Registry.
+O arquivo `docker-compose.yml` é exclusivo da produção: sobe a aplicação e um PostgreSQL 18 dedicado no mesmo projeto, usa a rede existente do Nginx e não publica as portas 3000 ou 5432 na VPS. Os dados do banco ficam no volume nomeado `revisa_prisma_postgres_data`. A imagem da aplicação é publicada no GitHub Container Registry.
 
-O passo a passo adaptado à VPS e ao Nginx fornecidos está em [deploy/PRODUCAO.md](deploy/PRODUCAO.md). O GitHub Actions executa CI, publica a imagem e faz o deploy por SSH. A aplicação aplica as migrações na inicialização e oferece `/api/health` para verificação.
+O passo a passo adaptado à VPS e ao Nginx fornecidos está em [deploy/PRODUCAO.md](deploy/PRODUCAO.md). O GitHub Actions executa CI, publica a imagem e faz o deploy por SSH. O Prisma aplica as migrações na inicialização e a aplicação oferece `/api/health` para verificação. O primeiro deploy com Prisma usa o novo volume `revisa_prisma_postgres_data`, começando com um banco vazio conforme autorizado.
 
 ## Regras da planilha
 
