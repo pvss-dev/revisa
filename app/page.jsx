@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight, BookOpen, CalendarDays, Check, CheckCircle2, ChevronDown, ChevronLeft,
   ChevronRight, CircleHelp, Clock3, Download, FileSpreadsheet, Filter, Flag,
-  LayoutDashboard, LockKeyhole, LogOut, Menu, MoreHorizontal, Plus, Search, Settings2, Sparkles,
+  LayoutDashboard, LockKeyhole, LogOut, Menu, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Plus, Search, Settings2, Sparkles,
   Target, Trash2, TrendingUp, Upload, UserRound, X,
 } from 'lucide-react';
 import { addDays, offsets, validReviewOffsets } from '@/lib/validation';
@@ -61,6 +61,7 @@ export default function Home() {
   const [agendaFilter, setAgendaFilter] = useState('all');
   const [toast, setToast] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [sidebarHidden, setSidebarHidden] = useState(false);
   const toastTimer = useRef(null);
 
   function notify(message) {
@@ -81,6 +82,9 @@ export default function Home() {
     setToday(todayLocal());
     api('/api/me').then(d => { setUser(d.user); if (d.user) refresh(); }).catch(() => setUser(null));
     return () => clearTimeout(toastTimer.current);
+  }, []);
+  useEffect(() => {
+    try { setSidebarHidden(window.localStorage.getItem('revisa-sidebar-hidden') === 'true'); } catch { /* armazenamento indisponível */ }
   }, []);
 
   async function submitAuth(e) {
@@ -160,22 +164,27 @@ export default function Home() {
   </div>;
 
   function chooseView(key) { setView(key); setMenuOpen(false); setSelectedTopic(null); setSelectedExam(null); }
+  function toggleSidebar() {
+    const hidden = !sidebarHidden;
+    setSidebarHidden(hidden);
+    try { window.localStorage.setItem('revisa-sidebar-hidden', String(hidden)); } catch { /* armazenamento indisponível */ }
+  }
   function openAttempt(topic, stage) { setSelectedTopic(topic); setModal({ type: 'attempt', topic, stage }); }
   function openTopic(topic) { setSelectedTopic(topic); setView('topics'); }
   const greeting = new Date().getHours() < 12 ? 'Bom dia' : new Date().getHours() < 18 ? 'Boa tarde' : 'Boa noite';
 
-  return <div className="app-shell">
-    <aside className={`sidebar ${menuOpen ? 'open' : ''}`}>
+  return <div className={`app-shell ${sidebarHidden ? 'sidebar-hidden' : ''}`}>
+    <aside id="app-sidebar" className={`sidebar ${menuOpen ? 'open' : ''}`}>
       <div className="sidebar-top"><div className="brand"><div className="brand-symbol"><BookOpen size={21}/></div><strong>revisa<span>.</span></strong></div><button className="icon-button mobile-close" onClick={() => setMenuOpen(false)} aria-label="Fechar menu"><X size={20}/></button></div>
       <div className="sidebar-caption">ESPAÇO DE ESTUDO</div>
       <nav className="nav-list" aria-label="Navegação principal">{navItems.map(item => <button key={item.key} className={`nav-item ${view === item.key ? 'active' : ''}`} onClick={() => chooseView(item.key)}><item.icon size={19}/><span>{item.label}</span>{item.key === 'agenda' && overdue > 0 && <i>{overdue}</i>}</button>)}</nav>
       <div className="sidebar-spacer"/>
       <div className="sidebar-tip"><div className="tip-spark"><Sparkles size={18}/></div><b>Um passo de cada vez.</b><p>Pequenas revisões frequentes fazem a diferença.</p></div>
-      <div className="sidebar-profile"><span className="avatar">{initials(user.name)}</span><div><b>{user.name}</b><small>{user.email}</small></div><button className="logout-button" title="Sair" aria-label="Sair" onClick={logout}><LogOut size={18}/></button></div>
+      <div className="sidebar-profile"><button className="profile-link" onClick={() => chooseView('profile')} aria-label="Abrir meu perfil"><span className="avatar">{initials(user.name)}</span><span className="profile-copy"><b>{user.name}</b><small>{user.email}</small></span></button><button className="logout-button" title="Sair" aria-label="Sair" onClick={logout}><LogOut size={18}/></button></div>
     </aside>
     {menuOpen && <button className="mobile-overlay" onClick={() => setMenuOpen(false)} aria-label="Fechar menu"/>}
     <main className="main-area">
-      <header className="topbar"><button className="icon-button menu-button" onClick={() => setMenuOpen(true)} aria-label="Abrir menu"><Menu size={21}/></button><div className="breadcrumb">Meu espaço <ChevronRight size={14}/> <strong>{navItems.find(n => n.key === view)?.label}</strong></div><div className="topbar-right"><div className="today-chip"><CalendarDays size={16}/>{formatDate(today, { weekday: 'long', day: 'numeric', month: 'long' })}</div><span className="top-avatar">{initials(user.name)}</span></div></header>
+      <header className="topbar"><div className="topbar-start"><button className="icon-button sidebar-toggle" onClick={toggleSidebar} aria-label={sidebarHidden ? 'Mostrar menu lateral' : 'Esconder menu lateral'} title={sidebarHidden ? 'Mostrar menu lateral' : 'Esconder menu lateral'} aria-expanded={!sidebarHidden} aria-controls="app-sidebar">{sidebarHidden ? <PanelLeftOpen size={21}/> : <PanelLeftClose size={21}/>}</button><button className="icon-button menu-button" onClick={() => setMenuOpen(true)} aria-label="Abrir menu" aria-expanded={menuOpen} aria-controls="app-sidebar"><Menu size={21}/></button><div className="breadcrumb">Meu espaço <ChevronRight size={14}/> <strong>{navItems.find(n => n.key === view)?.label}</strong></div></div><div className="topbar-right"><div className="today-chip"><CalendarDays size={16}/>{formatDate(today, { weekday: 'long', day: 'numeric', month: 'long' })}</div><button className="top-avatar" onClick={() => chooseView('profile')} title="Meu perfil" aria-label="Abrir meu perfil">{initials(user.name)}</button></div></header>
       <div className="page-content">
         {view === 'overview' && <>
           <div className="page-heading overview-heading"><div><div className="eyebrow"><span className="eyebrow-dot"/> SEU PAINEL DE ESTUDOS</div><h1>{greeting}, {user.name.split(' ')[0]} <span className="wave">✳</span></h1><p>Veja o que precisa da sua atenção e siga no seu ritmo.</p></div><button className="button primary" onClick={() => setModal({ type: 'topic' })}><Plus size={18}/> Novo assunto</button></div>
@@ -279,15 +288,6 @@ function ProfileSettings({ user, onProfileSave, onPasswordSave }) {
   return <>
     <div className="page-heading"><div><div className="eyebrow"><span className="eyebrow-dot"/> SUA CONTA</div><h1>Meu perfil</h1><p>Atualize seus dados de acesso e como você aparece no Revisa.</p></div></div>
     <div className="profile-grid">
-      <section className="panel settings-panel"><div className="settings-intro"><span className="modal-icon"><UserRound size={22}/></span><div><h2>Informações pessoais</h2><p>Seu nome e e-mail de acesso.</p></div></div>
-        <form className="settings-form profile-form" onSubmit={saveDetails}>
-          <label>Nome<input autoComplete="name" required minLength={2} maxLength={100} value={details.name} onChange={e => setDetails({ ...details, name: e.target.value })}/></label>
-          <label>E-mail<input type="email" autoComplete="email" required maxLength={254} value={details.email} onChange={e => setDetails({ ...details, email: e.target.value })}/></label>
-          {emailChanged && <><label>Senha atual<input type="password" autoComplete="current-password" required value={details.currentPassword} onChange={e => setDetails({ ...details, currentPassword: e.target.value })}/></label><div className="info-note"><LockKeyhole size={17}/><span>Para alterar seu e-mail de acesso, confirme sua senha atual.</span></div></>}
-          {detailsError && <div className="form-error" role="alert">{detailsError}</div>}
-          <button className="button primary settings-save" disabled={detailsBusy || (!emailChanged && details.name.trim() === user.name)}>{detailsBusy ? 'Salvando...' : 'Salvar informações'} <Check size={17}/></button>
-        </form>
-      </section>
       <section className="panel settings-panel"><div className="settings-intro"><span className="modal-icon"><LockKeyhole size={22}/></span><div><h2>Alterar senha</h2><p>Uma nova senha encerra as sessões em outros dispositivos.</p></div></div>
         <form className="settings-form profile-form" onSubmit={savePassword}>
           <label>Senha atual<input type="password" autoComplete="current-password" required value={passwords.currentPassword} onChange={e => setPasswords({ ...passwords, currentPassword: e.target.value })}/></label>
@@ -295,6 +295,15 @@ function ProfileSettings({ user, onProfileSave, onPasswordSave }) {
           <label>Confirmar nova senha<input type="password" autoComplete="new-password" required minLength={10} maxLength={128} value={passwords.confirmPassword} onChange={e => setPasswords({ ...passwords, confirmPassword: e.target.value })}/></label>
           {passwordError && <div className="form-error" role="alert">{passwordError}</div>}
           <button className="button primary settings-save" disabled={passwordBusy}>{passwordBusy ? 'Atualizando...' : 'Atualizar senha'} <Check size={17}/></button>
+        </form>
+      </section>
+      <section className="panel settings-panel"><div className="settings-intro"><span className="modal-icon"><UserRound size={22}/></span><div><h2>Informações pessoais</h2><p>Seu nome e e-mail de acesso.</p></div></div>
+        <form className="settings-form profile-form" onSubmit={saveDetails}>
+          <label>Nome<input autoComplete="name" required minLength={2} maxLength={100} value={details.name} onChange={e => setDetails({ ...details, name: e.target.value })}/></label>
+          <label>E-mail<input type="email" autoComplete="email" required maxLength={254} value={details.email} onChange={e => setDetails({ ...details, email: e.target.value })}/></label>
+          {emailChanged && <><label>Senha atual<input type="password" autoComplete="current-password" required value={details.currentPassword} onChange={e => setDetails({ ...details, currentPassword: e.target.value })}/></label><div className="info-note"><LockKeyhole size={17}/><span>Para alterar seu e-mail de acesso, confirme sua senha atual.</span></div></>}
+          {detailsError && <div className="form-error" role="alert">{detailsError}</div>}
+          <button className="button primary settings-save" disabled={detailsBusy || (!emailChanged && details.name.trim() === user.name)}>{detailsBusy ? 'Salvando...' : 'Salvar informações'} <Check size={17}/></button>
         </form>
       </section>
     </div>
