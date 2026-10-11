@@ -1,0 +1,56 @@
+name: revisa-prod
+
+services:
+  db:
+    image: postgres:18.3-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: revisa
+      POSTGRES_USER: revisa
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no arquivo .env.production}
+    volumes:
+      # Na imagem oficial do PostgreSQL 18, o volume deve cobrir o diretório pai do PGDATA.
+      - postgres_data:/var/lib/postgresql
+    networks:
+      - database
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U revisa -d revisa"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  app:
+    image: ${REVISA_IMAGE:?Defina REVISA_IMAGE no arquivo .env.production ou no deploy}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      FORCE_HTTPS: "true"
+      DATABASE_URL: postgresql://revisa:${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no arquivo .env.production}@db:5432/revisa
+    expose:
+      - "3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      database: {}
+      proxy:
+        aliases:
+          - revisa-app
+    healthcheck:
+      test: ["CMD", "node", "scripts/healthcheck.mjs"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  postgres_data:
+    name: revisa_postgres_data
+
+networks:
+  database:
+    internal: true
+  proxy:
+    external: true
+    name: ${PROXY_NETWORK:-nginx_local-net}

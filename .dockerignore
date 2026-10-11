@@ -1,0 +1,12 @@
+node_modules
+.next
+.env*
+.git
+.github
+deploy
+tests
+README.md
+docker-compose.yml
+compose.prod.yml
+*.log
+*.dump

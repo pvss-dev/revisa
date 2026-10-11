@@ -1,0 +1,62 @@
+# Segunda etapa: substitua o arquivo HTTP por este depois que o Certbot emitir
+# /etc/letsencrypt/live/revisa.pvss.dev.br/fullchain.pem.
+# Este arquivo vai em ~/projects/nginx/conf.d/revisa.conf na VPS.
+
+limit_req_zone $binary_remote_addr zone=revisa_auth:10m rate=10r/m;
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name revisa.pvss.dev.br;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name revisa.pvss.dev.br;
+
+    ssl_certificate     /etc/letsencrypt/live/revisa.pvss.dev.br/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/revisa.pvss.dev.br/privkey.pem;
+    include              /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam          /etc/letsencrypt/ssl-dhparams.pem;
+
+    # Resolve o nome do contêiner a cada poucos segundos, inclusive após deploys.
+    resolver 127.0.0.11 valid=10s ipv6=off;
+    set $revisa_app http://revisa-app:3000;
+
+    client_max_body_size 6m;
+    limit_req_status 429;
+    proxy_http_version 1.1;
+    proxy_set_header Host              $host;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Host  $host;
+    proxy_set_header Connection        "";
+    proxy_buffering off;
+    proxy_redirect off;
+    proxy_read_timeout 60s;
+
+    location / {
+        proxy_pass $revisa_app$request_uri;
+    }
+
+    location = /api/auth/login {
+        limit_req zone=revisa_auth burst=5 nodelay;
+        proxy_pass $revisa_app$request_uri;
+    }
+
+    location = /api/auth/register {
+        limit_req zone=revisa_auth burst=5 nodelay;
+        proxy_pass $revisa_app$request_uri;
+    }
+}

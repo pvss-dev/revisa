@@ -1,0 +1,102 @@
+name: Deploy
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        type: string
+        required: false
+        default: latest
+      restart:
+        type: boolean
+        required: false
+        default: false
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Image tag to deploy (for example sha-<full commit>)'
+        required: true
+        default: latest
+      restart:
+        description: 'Recreate the container even if the tag is unchanged'
+        type: boolean
+        default: false
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Check the deploy configuration
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_USER: ${{ vars.VPS_USER }}
+          VPS_APP_DIR: ${{ vars.VPS_APP_DIR }}
+        run: |
+          missing=''
+          [ -n "$VPS_HOST" ] || missing="$missing VPS_HOST(secret)"
+          [ -n "$VPS_KEY" ] || missing="$missing VPS_SSH_KEY(secret)"
+          [ -n "$VPS_USER" ] || missing="$missing VPS_USER(variable)"
+          [ -n "$VPS_APP_DIR" ] || missing="$missing VPS_APP_DIR(variable)"
+          if [ -n "$missing" ]; then
+            echo "Missing in the production environment:$missing" >&2
+            exit 1
+          fi
+
+      - uses: actions/checkout@v5
+
+      - name: Prepare the app directory
+        uses: appleboy/ssh-action@v1
+        env:
+          APP_DIR: ${{ vars.VPS_APP_DIR }}
+          IMAGE_REPO: ${{ github.repository }}
+          PROXY_NETWORK: ${{ vars.PROXY_NETWORK || 'nginx_local-net' }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ vars.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          fingerprint: ${{ secrets.VPS_SSH_FINGERPRINT }}
+          envs: APP_DIR,IMAGE_REPO,PROXY_NETWORK
+          script_path: deploy/prepare-remote.sh
+
+      - name: Copy the Compose file to the VPS
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ vars.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          fingerprint: ${{ secrets.VPS_SSH_FINGERPRINT }}
+          source: docker-compose.yml
+          target: ${{ vars.VPS_APP_DIR }}
+          overwrite: true
+
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1
+        env:
+          APP_DIR: ${{ vars.VPS_APP_DIR }}
+          IMAGE_REPO: ${{ github.repository }}
+          IMAGE_TAG: ${{ inputs.tag }}
+          RESTART: ${{ inputs.restart && 'true' || 'false' }}
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ vars.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          fingerprint: ${{ secrets.VPS_SSH_FINGERPRINT }}
+          command_timeout: 10m
+          envs: APP_DIR,IMAGE_REPO,IMAGE_TAG,RESTART,GHCR_USER,GHCR_TOKEN
+          script_path: deploy/deploy-remote.sh
