@@ -4,8 +4,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight, BookOpen, CalendarDays, Check, CheckCircle2, ChevronDown, ChevronLeft,
   ChevronRight, CircleHelp, Clock3, Download, FileSpreadsheet, Filter, Flag,
-  LayoutDashboard, LogOut, Menu, MoreHorizontal, Plus, Search, Settings2, Sparkles,
-  Target, Trash2, TrendingUp, Upload, X,
+  LayoutDashboard, LockKeyhole, LogOut, Menu, MoreHorizontal, Plus, Search, Settings2, Sparkles,
+  Target, Trash2, TrendingUp, Upload, UserRound, X,
 } from 'lucide-react';
 import { addDays, offsets, validReviewOffsets } from '@/lib/validation';
 
@@ -17,6 +17,7 @@ const navItems = [
   { key: 'topics', label: 'Meus assuntos', icon: BookOpen },
   { key: 'exams', label: 'Provas completas', icon: Target },
   { key: 'settings', label: 'Intervalos', icon: Settings2 },
+  { key: 'profile', label: 'Meu perfil', icon: UserRound },
 ];
 
 function todayLocal() {
@@ -196,6 +197,7 @@ export default function Home() {
           <section className="panel topic-table"><div className="table-head"><span>ASSUNTO</span><span>PRIORIDADE</span><span>PROGRESSO</span><span>PRÓXIMA REVISÃO</span><span/></div>{filteredTopics.length ? filteredTopics.map((topic,i)=>{ const done=topic.attempts?.length||0;const next=offsets.map((_,stage)=>({stage,date:stageDate(topic,stage,user.reviewOffsets)})).find(x=>!topic.attempts?.some(a=>Number(a.stage)===x.stage));return <button className="topic-row" key={topic.id} onClick={()=>setSelectedTopic(topic)}><div className="topic-name"><span className={`topic-icon color-${i%5}`}><BookOpen size={17}/></span><div><b>{topic.title}</b><small>{topic.subject}</small></div></div><span className={`priority-pill ${topic.priority.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu,'')}`}>{topic.priority}</span><div className="topic-progress"><div className="mini-track"><i style={{width:`${done*20}%`}}/></div><small>{done}/5</small></div><div className="next-date">{next ? <><CalendarDays size={16}/>{formatDate(next.date,{day:'2-digit',month:'short',year:'numeric'})}</> : <span className="done-label"><Check size={15}/> Completo</span>}</div><ChevronRight className="row-arrow" size={18}/></button>}) : <Empty icon={BookOpen} title={query || priorityFilter !== 'Todas' ? 'Nenhum assunto encontrado' : 'Sua biblioteca está vazia'} text={query || priorityFilter !== 'Todas' ? 'Tente mudar a busca ou o filtro.' : 'Adicione seu primeiro assunto ou importe sua planilha.'} action={!query && priorityFilter === 'Todas' ? 'Adicionar assunto' : null} onClick={()=>setModal({ type:'topic' })}/>}</section>
         </>}
         {view === 'settings' && <ReviewSettings initial={user.reviewOffsets || offsets.slice(1)} onSave={async reviewOffsets => { const result = await api('/api/settings/reviews', { method: 'PATCH', body: JSON.stringify({ reviewOffsets }) }); setUser(current => ({ ...current, reviewOffsets: result.reviewOffsets })); notify('Intervalos atualizados. A agenda foi recalculada.'); }} />}
+        {view === 'profile' && <ProfileSettings user={user} onProfileSave={async details => { const result = await api('/api/me', { method: 'PATCH', body: JSON.stringify(details) }); setUser(result.user); notify('Perfil atualizado.'); }} onPasswordSave={async details => { await api('/api/me/password', { method: 'PUT', body: JSON.stringify(details) }); notify('Senha atualizada. As outras sessões foram encerradas.'); }} />}
         {view === 'exams' && <>
           <div className="page-heading"><div><div className="eyebrow"><span className="eyebrow-dot"/> SIMULE, ANALISE, EVOLUA</div><h1>Provas completas</h1><p>Marque seus acertos questão por questão e acompanhe cada prova.</p></div><button className="button primary" onClick={() => setModal({ type:'exam' })}><Plus size={18}/> Nova prova</button></div>
           <div className="exam-intro"><div className="exam-intro-icon"><Target size={29}/></div><div><h3>O treino também conta</h3><p>Registre respostas certas e erradas. O percentual de acertos é calculado automaticamente.</p></div></div>
@@ -245,6 +247,57 @@ function ReviewSettings({ initial, onSave }) {
         <button className="button primary settings-save" disabled={busy || !valid}>{busy ? 'Salvando...' : 'Salvar intervalos'} <Check size={17}/></button>
       </form>
     </section>
+  </>;
+}
+function ProfileSettings({ user, onProfileSave, onPasswordSave }) {
+  const [details, setDetails] = useState({ name: user.name, email: user.email, currentPassword: '' });
+  const [passwords, setPasswords] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [detailsBusy, setDetailsBusy] = useState(false);
+  const [passwordBusy, setPasswordBusy] = useState(false);
+  const [detailsError, setDetailsError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const emailChanged = details.email.trim().toLowerCase() !== user.email;
+
+  async function saveDetails(e) {
+    e.preventDefault(); setDetailsBusy(true); setDetailsError('');
+    try {
+      await onProfileSave(details);
+      setDetails(current => ({ ...current, currentPassword: '' }));
+    } catch (err) { setDetailsError(err.message); }
+    finally { setDetailsBusy(false); }
+  }
+  async function savePassword(e) {
+    e.preventDefault(); setPasswordError('');
+    if (passwords.newPassword !== passwords.confirmPassword) return setPasswordError('A confirmação não corresponde à nova senha.');
+    setPasswordBusy(true);
+    try {
+      await onPasswordSave({ currentPassword: passwords.currentPassword, newPassword: passwords.newPassword });
+      setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (err) { setPasswordError(err.message); }
+    finally { setPasswordBusy(false); }
+  }
+  return <>
+    <div className="page-heading"><div><div className="eyebrow"><span className="eyebrow-dot"/> SUA CONTA</div><h1>Meu perfil</h1><p>Atualize seus dados de acesso e como você aparece no Revisa.</p></div></div>
+    <div className="profile-grid">
+      <section className="panel settings-panel"><div className="settings-intro"><span className="modal-icon"><UserRound size={22}/></span><div><h2>Informações pessoais</h2><p>Seu nome e e-mail de acesso.</p></div></div>
+        <form className="settings-form profile-form" onSubmit={saveDetails}>
+          <label>Nome<input autoComplete="name" required minLength={2} maxLength={100} value={details.name} onChange={e => setDetails({ ...details, name: e.target.value })}/></label>
+          <label>E-mail<input type="email" autoComplete="email" required maxLength={254} value={details.email} onChange={e => setDetails({ ...details, email: e.target.value })}/></label>
+          {emailChanged && <><label>Senha atual<input type="password" autoComplete="current-password" required value={details.currentPassword} onChange={e => setDetails({ ...details, currentPassword: e.target.value })}/></label><div className="info-note"><LockKeyhole size={17}/><span>Para alterar seu e-mail de acesso, confirme sua senha atual.</span></div></>}
+          {detailsError && <div className="form-error" role="alert">{detailsError}</div>}
+          <button className="button primary settings-save" disabled={detailsBusy || (!emailChanged && details.name.trim() === user.name)}>{detailsBusy ? 'Salvando...' : 'Salvar informações'} <Check size={17}/></button>
+        </form>
+      </section>
+      <section className="panel settings-panel"><div className="settings-intro"><span className="modal-icon"><LockKeyhole size={22}/></span><div><h2>Alterar senha</h2><p>Uma nova senha encerra as sessões em outros dispositivos.</p></div></div>
+        <form className="settings-form profile-form" onSubmit={savePassword}>
+          <label>Senha atual<input type="password" autoComplete="current-password" required value={passwords.currentPassword} onChange={e => setPasswords({ ...passwords, currentPassword: e.target.value })}/></label>
+          <label>Nova senha<input type="password" autoComplete="new-password" required minLength={10} maxLength={128} value={passwords.newPassword} onChange={e => setPasswords({ ...passwords, newPassword: e.target.value })} placeholder="Mínimo de 10 caracteres"/></label>
+          <label>Confirmar nova senha<input type="password" autoComplete="new-password" required minLength={10} maxLength={128} value={passwords.confirmPassword} onChange={e => setPasswords({ ...passwords, confirmPassword: e.target.value })}/></label>
+          {passwordError && <div className="form-error" role="alert">{passwordError}</div>}
+          <button className="button primary settings-save" disabled={passwordBusy}>{passwordBusy ? 'Atualizando...' : 'Atualizar senha'} <Check size={17}/></button>
+        </form>
+      </section>
+    </div>
   </>;
 }
 function TopicForm({ topic, userOffsets, onSave, onClose }) {
