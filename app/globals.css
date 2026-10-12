@@ -30,6 +30,27 @@
 @media(max-width:800px){.sidebar-toggle{display:none}}
 
 .interval-fields{display:grid;gap:12px}.interval-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.interval-actions>span{font-size:12px;color:#718478}.interval-actions>div{display:flex;gap:8px;flex-wrap:wrap}.interval-actions .button{min-height:44px;padding:12px 17px;font-size:13px}.modal-form .interval-actions>div{width:100%}.modal-form .interval-actions .button{flex:1}@media(max-width:480px){.interval-actions>div{width:100%}.interval-actions .button{flex:1}}
+
+.pomodoro-layout{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(320px,.85fr);gap:20px;align-items:start}
+.pomodoro-main{min-height:610px;padding:28px 32px 26px;display:flex;flex-direction:column;align-items:center}
+.pomodoro-mode-tabs{display:flex;justify-content:center;flex-wrap:wrap;gap:5px;padding:5px;background:#f0f4ee;border-radius:13px}
+.pomodoro-mode-tabs button{border:0;border-radius:9px;background:transparent;color:#799082;font-size:12px;font-weight:800;padding:10px 16px;white-space:nowrap}
+.pomodoro-mode-tabs button.active{background:#fff;color:#286449;box-shadow:0 2px 8px rgba(31,68,44,.08)}
+.pomodoro-dial{--dial-color:#2e8161;width:min(100%,300px);aspect-ratio:1;border-radius:50%;padding:12px;background:conic-gradient(var(--dial-color) var(--progress),#e8f0e7 0);display:grid;place-items:center;margin:33px auto 29px}
+.pomodoro-dial.shortBreak{--dial-color:#c78d5d}.pomodoro-dial.longBreak{--dial-color:#6b95af}
+.pomodoro-dial-inner{width:100%;height:100%;border-radius:50%;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px #eef1eb}
+.pomodoro-dial-icon{width:42px;height:42px;display:grid;place-items:center;border-radius:12px;background:#eaf3e9;color:#3f8c68;margin-bottom:13px}
+.pomodoro-dial.shortBreak .pomodoro-dial-icon{background:#fff1e4;color:#bb8355}.pomodoro-dial.longBreak .pomodoro-dial-icon{background:#eaf1f5;color:#7196ac}
+.pomodoro-mode-name{font-size:12px;font-weight:800;color:#718b79}.pomodoro-clock{font:800 clamp(52px,5vw,73px) Manrope,sans-serif;letter-spacing:-.065em;line-height:1.2;color:#243f32;margin:5px 0}.pomodoro-status{font-size:11px;color:#9aaa9e;font-weight:700}
+.pomodoro-controls{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px;width:100%}.pomodoro-controls .button.primary{min-width:168px}.pomodoro-next{font-size:12px;color:#91a094;text-align:center;line-height:1.6;margin:23px 0 0}.pomodoro-next strong{color:#4a7959}
+.pomodoro-side{display:grid;gap:18px}.pomodoro-summary,.pomodoro-settings{padding:24px 25px}.pomodoro-card-heading{display:flex;gap:12px;align-items:center;margin-bottom:20px}.pomodoro-card-heading h2{font-size:17px;margin:0 0 4px}.pomodoro-card-heading p{font-size:11px;color:#9aa89e;margin:0}
+.pomodoro-counts{display:grid;grid-template-columns:1fr 1fr;gap:11px}.pomodoro-counts>div{border:1px solid #e7eee5;background:#f8faf6;border-radius:11px;padding:14px}.pomodoro-counts strong,.pomodoro-counts span{display:block}.pomodoro-counts strong{font:800 29px Manrope;color:#327b59}.pomodoro-counts span{font-size:11px;color:#899b8e;margin-top:3px}
+.pomodoro-cycle{border-top:1px solid #edf1ea;margin-top:19px;padding-top:18px}.pomodoro-cycle b,.pomodoro-cycle span{display:block}.pomodoro-cycle b{font-size:12px;margin-bottom:4px}.pomodoro-cycle span{font-size:11px;color:#98a79a}.pomodoro-dots{display:flex;gap:7px;margin-top:13px}.pomodoro-dots i{height:9px;flex:1;border-radius:10px;background:#e5ece3}.pomodoro-dots i.done{background:#72aa84}
+.pomodoro-settings-form{display:grid;gap:17px}.pomodoro-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.pomodoro-fields label{display:grid;gap:7px;font-size:11px;color:#52695b;font-weight:800}.pomodoro-fields label>span{display:flex;align-items:center;gap:7px;border:1px solid #dfe9dc;background:#fff;border-radius:9px;padding:0 10px}.pomodoro-fields input{width:100%;min-width:0;min-height:43px;border:0;outline:0;background:transparent;color:#244734;font-size:15px;font-weight:800}.pomodoro-fields small{color:#9cab9c;font-size:11px;font-weight:600}.pomodoro-fields label>span:focus-within{border-color:#72ac8a;box-shadow:0 0 0 3px #dbeadc}
+.pomodoro-sound{display:flex;align-items:center;gap:9px;color:#607964;font-size:12px;font-weight:700;cursor:pointer}.pomodoro-sound input{width:17px;height:17px;accent-color:#2e7a58;margin:0}.pomodoro-sound svg{color:#6e9a7a}.pomodoro-settings .info-note{font-size:11px}.pomodoro-save{justify-self:end}
+@media(max-width:1100px){.pomodoro-layout{grid-template-columns:1fr}.pomodoro-main{min-height:0}.pomodoro-side{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:800px){.pomodoro-side{grid-template-columns:1fr}}
+@media(max-width:580px){.pomodoro-main{padding:20px 15px 24px}.pomodoro-mode-tabs{width:100%}.pomodoro-mode-tabs button{flex:1;padding:10px 6px;font-size:11px}.pomodoro-dial{width:min(100%,270px);margin:28px auto 24px}.pomodoro-clock{font-size:60px}.pomodoro-controls .button{flex:1;min-width:0}.pomodoro-controls .button.primary{flex-basis:100%}.pomodoro-summary,.pomodoro-settings{padding:20px}.pomodoro-save{width:100%}}
 }
 
 @layer utilities {
