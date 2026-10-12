@@ -15,17 +15,48 @@ import PomodoroTimer from './PomodoroTimer';
 
 const stageName = stage => stage === 0 ? 'Questões iniciais' : `Revisão ${stage}`;
 const stageShort = stage => stage === 0 ? 'Q0' : `R${stage}`;
-const navItems = [
-  { key: 'overview', label: 'Visão geral', icon: LayoutDashboard, href: appRoutes.overview },
-  { key: 'agenda', label: 'Agenda', icon: CalendarDays, href: appRoutes.agenda },
-  { key: 'pomodoro', label: 'Pomodoro', icon: Timer, href: appRoutes.pomodoro },
-  { key: 'topics', label: 'Meus assuntos', icon: BookOpen, href: appRoutes.topics },
-  { key: 'disciplines', label: 'Minhas disciplinas', icon: Library, href: appRoutes.disciplines },
-  { key: 'exams', label: 'Provas completas', icon: Target, href: appRoutes.exams },
-  { key: 'settings', label: 'Intervalos', icon: Settings2, href: appRoutes.settings },
-  { key: 'appearance', label: 'Aparência', icon: Palette, href: appRoutes.appearance },
-  { key: 'profile', label: 'Meu perfil', icon: UserRound, href: appRoutes.profile },
+const navGroups = [
+  {
+    key: 'home',
+    label: 'INÍCIO',
+    items: [
+      { key: 'overview', label: 'Visão geral', icon: LayoutDashboard, href: appRoutes.overview },
+    ],
+  },
+  {
+    key: 'planning',
+    label: 'PLANEJAMENTO',
+    items: [
+      { key: 'agenda', label: 'Agenda', icon: CalendarDays, href: appRoutes.agenda },
+      { key: 'topics', label: 'Meus assuntos', icon: BookOpen, href: appRoutes.topics },
+      { key: 'disciplines', label: 'Minhas disciplinas', icon: Library, href: appRoutes.disciplines },
+    ],
+  },
+  {
+    key: 'study-sessions',
+    label: 'SESSÕES DE ESTUDO',
+    items: [
+      { key: 'pomodoro', label: 'Pomodoro', icon: Timer, href: appRoutes.pomodoro },
+      { key: 'settings', label: 'Intervalos', icon: Settings2, href: appRoutes.settings },
+    ],
+  },
+  {
+    key: 'assessment',
+    label: 'AVALIAÇÃO',
+    items: [
+      { key: 'exams', label: 'Provas completas', icon: Target, href: appRoutes.exams },
+    ],
+  },
+  {
+    key: 'preferences',
+    label: 'PREFERÊNCIAS',
+    items: [
+      { key: 'appearance', label: 'Aparência', icon: Palette, href: appRoutes.appearance },
+      { key: 'profile', label: 'Meu perfil', icon: UserRound, href: appRoutes.profile },
+    ],
+  },
 ];
+const navItems = navGroups.flatMap(group => group.items);
 
 function todayLocal() {
   const d = new Date();
@@ -257,8 +288,14 @@ export default function RevisaApp({ initialView = 'overview' }) {
   return <div className={`app-shell flex min-h-screen ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
     <aside id="app-sidebar" className={`sidebar flex flex-none flex-col ${menuOpen ? 'open' : ''}`}>
       <div className="sidebar-top"><div className="brand"><div className="brand-symbol"><BookOpen size={21}/></div><strong>revisa<span>.</span></strong></div><button className="icon-button sidebar-toggle sidebar-tooltip-target" onClick={toggleSidebar} aria-label={sidebarCollapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'} data-tooltip={sidebarCollapsed ? 'Expandir menu' : 'Recolher menu'} aria-expanded={!sidebarCollapsed} aria-controls="app-sidebar">{sidebarCollapsed ? <PanelLeftOpen size={21}/> : <PanelLeftClose size={21}/>}</button><button className="icon-button mobile-close" onClick={() => setMenuOpen(false)} aria-label="Fechar menu"><X size={20}/></button></div>
-      <div className="sidebar-caption">ESPAÇO DE ESTUDO</div>
-      <nav className="nav-list grid gap-1.5" aria-label="Navegação principal">{navItems.map(item => <button key={item.key} className={`nav-item sidebar-tooltip-target ${view === item.key ? 'active' : ''}`} data-tooltip={item.label} aria-label={item.label} aria-current={view === item.key ? 'page' : undefined} onClick={() => chooseView(item.key)}><item.icon size={19}/><span className="nav-label">{item.label}</span>{item.key === 'agenda' && overdue > 0 && <i aria-label={`${overdue} revisões em atraso`}>{overdue}</i>}</button>)}</nav>
+      <nav className="nav-groups" aria-label="Navegação principal">
+        {navGroups.map(group => <section className="sidebar-nav-group" aria-labelledby={`nav-group-${group.key}`} key={group.key}>
+          <h2 className="sidebar-caption" id={`nav-group-${group.key}`}>{group.label}</h2>
+          <div className="nav-list">
+            {group.items.map(item => <button type="button" key={item.key} className={`nav-item sidebar-tooltip-target ${view === item.key ? 'active' : ''}`} data-tooltip={item.label} aria-label={item.label} aria-current={view === item.key ? 'page' : undefined} onClick={() => chooseView(item.key)}><item.icon size={19}/><span className="nav-label">{item.label}</span>{item.key === 'agenda' && overdue > 0 && <i aria-label={`${overdue} revisões em atraso`}>{overdue}</i>}</button>)}
+          </div>
+        </section>)}
+      </nav>
       <div className="sidebar-spacer flex-1"/>
       <div className="sidebar-tip"><div className="tip-spark"><Sparkles size={18}/></div><b>Um passo de cada vez.</b><p>Pequenas revisões frequentes fazem a diferença.</p></div>
       <div className="sidebar-profile flex items-center gap-2.5"><button className="profile-link sidebar-tooltip-target" data-tooltip="Meu perfil" onClick={() => chooseView('profile')} aria-label="Abrir meu perfil"><span className="avatar">{initials(user.name)}</span><span className="profile-copy"><b>{user.name}</b><small>{user.email}</small></span></button><button className="logout-button sidebar-tooltip-target" data-tooltip="Sair" aria-label="Sair" onClick={logout}><LogOut size={18}/></button></div>
