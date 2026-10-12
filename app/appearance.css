@@ -61,7 +61,7 @@
   .button.secondary { background: var(--surface); color: var(--ink); border-color: var(--border); }
   .button.secondary:hover, .icon-button:hover { background: var(--surface-hover); }
   .eyebrow, .section-overline, .text-button, .auth-switch button, .event-details button:hover,
-  .event-action, .done-label, .topics-summary>div, .exam-percent,
+  .event-action, .done-label, .topics-summary>div, .exam-percent, .discipline-topic-link,
   .exam-card-bottom>span:last-child, .drawer-subject, .timeline-result,
   .timeline-item>button, .schedule-preview strong, .result-preview strong,
   .pomodoro-counts strong, .pomodoro-next strong, .pomodoro-mode-tabs button.active,
@@ -119,6 +119,7 @@
     background: var(--surface); color: var(--ink); border-color: var(--border);
   }
   :root[data-theme='dark'] .topic-row:hover,
+  :root[data-theme='dark'] .discipline-table-row:hover,
   :root[data-theme='dark'] .exam-card:hover,
   :root[data-theme='dark'] .icon-button:hover { background: var(--surface-hover); }
   :root[data-theme='dark'] .segmented,
@@ -182,6 +183,7 @@
   :root[data-theme='dark'] .calendar-day b,
   :root[data-theme='dark'] .topics-summary b,
   :root[data-theme='dark'] .topic-name b,
+  :root[data-theme='dark'] .discipline-name b,
   :root[data-theme='dark'] .auth-form label,
   :root[data-theme='dark'] .modal-form label,
   :root[data-theme='dark'] .profile-form label,
@@ -198,6 +200,8 @@
   :root[data-theme='dark'] .topic-row,
   :root[data-theme='dark'] .exam-card,
   :root[data-theme='dark'] .table-head,
+  :root[data-theme='dark'] .discipline-table-head,
+  :root[data-theme='dark'] .discipline-table-row,
   :root[data-theme='dark'] .event-row,
   :root[data-theme='dark'] .settings-intro,
   :root[data-theme='dark'] .pomodoro-cycle { border-color: var(--border); }
@@ -205,7 +209,7 @@
 
   .breadcrumb, .today-chip, .page-heading p, .stat-card small, .event-details span,
   .subject-row small, .empty-state p, .agenda-toolbar>span, .topics-summary span,
-  .table-head, .topic-name small, .topic-progress small, .next-date,
+  .table-head, .topic-name small, .discipline-table-head, .discipline-name small, .topic-progress small, .next-date,
   .exam-card p, .exam-card-bottom, .drawer-tags>span:last-child,
   .drawer-stats span, .exam-drawer-stats span, .drawer-section-head span,
   .timeline-item small, .modal-head p, .modal-form label small,
@@ -257,13 +261,9 @@
   .appearance-custom-form .button { height: 47px; }
   .appearance-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 2px; }
   .appearance-footer span { font-size: 12px; }
-  :root[data-theme='dark'] .discipline-color-preview,
-  :root[data-theme='dark'] .discipline-empty { background: var(--surface-alt); border-color: var(--border); }
+  :root[data-theme='dark'] .discipline-color-preview { background: var(--surface-alt); border-color: var(--border); }
   :root[data-theme='dark'] .modal-form .form-label-row label,
-  :root[data-theme='dark'] .discipline-color-preview b,
-  :root[data-theme='dark'] .discipline-row b { color: var(--ink); }
-  :root[data-theme='dark'] .discipline-row,
-  :root[data-theme='dark'] .discipline-list { border-color: var(--border); }
+  :root[data-theme='dark'] .discipline-color-preview b { color: var(--ink); }
   @media (max-width: 750px) { .appearance-theme-grid { grid-template-columns: 1fr; } .appearance-theme { min-height: 75px; } }
   @media (max-width: 580px) { .appearance-section { padding: 21px; } .appearance-swatches { grid-template-columns: repeat(2, minmax(0, 1fr)); } .appearance-footer { align-items: stretch; flex-direction: column; } .appearance-custom-form .button { width: 100%; } }
 }
