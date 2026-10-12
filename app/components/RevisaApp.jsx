@@ -296,7 +296,6 @@ export default function RevisaApp({ initialView = 'overview' }) {
           </div>
         </section>)}
       </nav>
-      <div className="sidebar-spacer flex-1"/>
       <div className="sidebar-tip"><div className="tip-spark"><Sparkles size={18}/></div><b>Um passo de cada vez.</b><p>Pequenas revisões frequentes fazem a diferença.</p></div>
       <div className="sidebar-profile flex items-center gap-2.5"><button className="profile-link sidebar-tooltip-target" data-tooltip="Meu perfil" onClick={() => chooseView('profile')} aria-label="Abrir meu perfil"><span className="avatar">{initials(user.name)}</span><span className="profile-copy"><b>{user.name}</b><small>{user.email}</small></span></button><button className="logout-button sidebar-tooltip-target" data-tooltip="Sair" aria-label="Sair" onClick={logout}><LogOut size={18}/></button></div>
     </aside>

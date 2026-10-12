@@ -123,8 +123,25 @@
   .nav-groups {
     display: flex;
     min-height: 0;
+    flex: 1 1 auto;
     flex-direction: column;
     gap: 16px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 4px;
+    scrollbar-color: rgba(176, 202, 188, .38) transparent;
+    scrollbar-width: thin;
+  }
+
+  .nav-groups::-webkit-scrollbar { width: 4px; }
+  .nav-groups::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgba(176, 202, 188, .38);
+  }
+
+  .sidebar-tip,
+  .sidebar-profile {
+    flex: none;
   }
 
   .sidebar-nav-group {
@@ -146,21 +163,6 @@
   .nav-list {
     display: grid;
     gap: 4px;
-  }
-
-  @media (max-width:800px) {
-    .nav-groups {
-      overflow-y: auto;
-      padding-right: 4px;
-      scrollbar-color: rgba(176, 202, 188, .38) transparent;
-      scrollbar-width: thin;
-    }
-
-    .nav-groups::-webkit-scrollbar { width: 4px; }
-    .nav-groups::-webkit-scrollbar-thumb {
-      border-radius: 999px;
-      background: rgba(176, 202, 188, .38);
-    }
   }
 
   @media (min-width:801px) and (max-height:900px) {
@@ -257,7 +259,11 @@
 
     .app-shell.sidebar-collapsed .sidebar-caption { display: none; }
 
-    .app-shell.sidebar-collapsed .nav-groups { gap: 10px; }
+    .app-shell.sidebar-collapsed .nav-groups {
+      gap: 10px;
+      overflow: visible;
+      padding-right: 0;
+    }
 
     .app-shell.sidebar-collapsed .sidebar-nav-group { gap: 0; }
 
