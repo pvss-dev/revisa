@@ -16,11 +16,27 @@ model User {
   accentColor     String        @default("#246D54") @map("accent_color")
   createdAt     DateTime        @default(now()) @map("created_at")
   sessions      Session[]
+  disciplines   Discipline[]
   topics        Topic[]
   attempts      ReviewAttempt[]
   exams         Exam[]
 
   @@map("users")
+}
+
+model Discipline {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @map("user_id")
+  name       String
+  colorIndex Int      @default(0) @map("color_index")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topics     Topic[]
+
+  @@unique([userId, name])
+  @@index([userId], map: "disciplines_user_idx")
+  @@map("disciplines")
 }
 
 model Session {
@@ -37,7 +53,7 @@ model Session {
 model Topic {
   id            Int             @id @default(autoincrement())
   userId        Int             @map("user_id")
-  subject       String
+  disciplineId  Int             @map("discipline_id")
   title         String
   lessonDate    DateTime?       @db.Date @map("lesson_date")
   practiceDate  DateTime        @db.Date @map("practice_date")
@@ -47,10 +63,12 @@ model Topic {
   createdAt     DateTime        @default(now()) @map("created_at")
   updatedAt     DateTime        @updatedAt @map("updated_at")
   user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  discipline    Discipline      @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
   attempts      ReviewAttempt[]
 
   @@unique([userId, sourceKey])
   @@index([userId, practiceDate], map: "topics_user_practice_idx")
+  @@index([disciplineId], map: "topics_discipline_idx")
   @@map("topics")
 }
 

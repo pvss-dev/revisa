@@ -43,6 +43,13 @@ export async function POST(request) {
   let imported = 0;
   let skipped = 0;
   await prisma.$transaction(async tx => {
+    const savedDisciplines = await tx.discipline.findMany({
+      where: { userId: auth.user.id },
+      select: { id: true, name: true, colorIndex: true },
+    });
+    const disciplinesByName = new Map(savedDisciplines.map(item => [item.name.toLocaleLowerCase('pt-BR'), item]));
+    const colorCounts = Array.from({ length: 5 }, () => 0);
+    savedDisciplines.forEach(item => { if (item.colorIndex >= 0 && item.colorIndex < colorCounts.length) colorCounts[item.colorIndex]++; });
     for (let row = 2; row <= sheet.rowCount; row++) {
       const subject = String(value(sheet.getCell(`A${row}`)) ?? '').trim();
       const title = String(value(sheet.getCell(`B${row}`)) ?? '').trim();
@@ -52,8 +59,20 @@ export async function POST(request) {
       const rawPriority = String(value(sheet.getCell(`D${row}`)) ?? 'Média').trim();
       const priority = ['Alta','Média','Baixa'].includes(rawPriority) ? rawPriority : 'Média';
       const sourceKey = `${digest}:${row}`;
+      const disciplineName = subject.slice(0, 120).replace(/\s+/g, ' ');
+      const disciplineKey = disciplineName.toLocaleLowerCase('pt-BR');
+      let discipline = disciplinesByName.get(disciplineKey);
+      if (!discipline) {
+        const colorIndex = colorCounts.indexOf(Math.min(...colorCounts));
+        discipline = await tx.discipline.create({
+          data: { userId: auth.user.id, name: disciplineName, colorIndex },
+          select: { id: true, name: true, colorIndex: true },
+        });
+        colorCounts[colorIndex]++;
+        disciplinesByName.set(disciplineKey, discipline);
+      }
       const inserted = await tx.topic.createMany({
-        data: [{ userId: auth.user.id, subject: subject.slice(0, 120), title: title.slice(0, 240),
+        data: [{ userId: auth.user.id, disciplineId: discipline.id, title: title.slice(0, 240),
           lessonDate: dateValue(lessonDate), practiceDate: dateValue(practiceDate), priority, sourceKey }],
         skipDuplicates: true,
       });

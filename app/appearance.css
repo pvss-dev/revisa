@@ -257,6 +257,13 @@
   .appearance-custom-form .button { height: 47px; }
   .appearance-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 2px; }
   .appearance-footer span { font-size: 12px; }
+  :root[data-theme='dark'] .discipline-form,
+  :root[data-theme='dark'] .discipline-empty { background: var(--surface-alt); border-color: var(--border); }
+  :root[data-theme='dark'] .discipline-form input { background: var(--surface); color: var(--ink); border-color: var(--border); }
+  :root[data-theme='dark'] .discipline-form label,
+  :root[data-theme='dark'] .discipline-row b { color: var(--ink); }
+  :root[data-theme='dark'] .discipline-row,
+  :root[data-theme='dark'] .discipline-list { border-color: var(--border); }
   @media (max-width: 750px) { .appearance-theme-grid { grid-template-columns: 1fr; } .appearance-theme { min-height: 75px; } }
   @media (max-width: 580px) { .appearance-section { padding: 21px; } .appearance-swatches { grid-template-columns: repeat(2, minmax(0, 1fr)); } .appearance-footer { align-items: stretch; flex-direction: column; } .appearance-custom-form .button { width: 100%; } }
 }

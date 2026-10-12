@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { addDays, offsets, validTopic, dateString, validReviewOffsets } from '../lib/validation.js';
+import { addDays, offsets, validDiscipline, validTopic, dateString, validReviewOffsets } from '../lib/validation.js';
 
 test('revisões usam a data das primeiras questões, inclusive na virada do ano', () => {
   assert.deepEqual(offsets.map(days => addDays('2026-12-20', days)), [
@@ -10,8 +10,11 @@ test('revisões usam a data das primeiras questões, inclusive na virada do ano'
 
 test('datas e dados do assunto rejeitam valores inválidos', () => {
   assert.equal(dateString('2026-02-30'), null);
-  assert.equal(validTopic({ subject: 'Direito', title: 'Princípios', practiceDate: '2026-03-10', priority: 'Alta' })?.priority, 'Alta');
-  assert.equal(validTopic({ subject: 'Direito', title: 'Princípios', practiceDate: '2026-02-30', priority: 'Alta' }), null);
+  assert.equal(validTopic({ disciplineId: 3, title: 'Princípios', practiceDate: '2026-03-10', priority: 'Alta' })?.priority, 'Alta');
+  assert.equal(validTopic({ disciplineId: 3, title: 'Princípios', practiceDate: '2026-02-30', priority: 'Alta' }), null);
+  assert.equal(validTopic({ disciplineId: 0, title: 'Princípios', practiceDate: '2026-03-10' }), null);
+  assert.deepEqual(validDiscipline({ name: '  Língua   Portuguesa  ' }), { name: 'Língua Portuguesa' });
+  assert.equal(validDiscipline({ name: 'A' }), null);
 });
 
 test('intervalos personalizados aceitam de quatro a vinte dias crescentes', () => {
@@ -21,6 +24,6 @@ test('intervalos personalizados aceitam de quatro a vinte dias crescentes', () =
   assert.equal(validReviewOffsets([3,10,30]), null);
   assert.equal(validReviewOffsets(Array.from({length:21}, (_,i) => i+1)), null);
   assert.equal(validReviewOffsets([true,10,30,90]), null);
-  assert.deepEqual(validTopic({ subject:'Direito',title:'Princípios',practiceDate:'2026-03-10',reviewOffsets:[3,10,30,90] })?.reviewOffsets, [3,10,30,90]);
-  assert.equal(validTopic({ subject:'Direito',title:'Princípios',practiceDate:'2026-03-10',reviewOffsets:[10,3,30,90] }), null);
+  assert.deepEqual(validTopic({ disciplineId:1,title:'Princípios',practiceDate:'2026-03-10',reviewOffsets:[3,10,30,90] })?.reviewOffsets, [3,10,30,90]);
+  assert.equal(validTopic({ disciplineId:1,title:'Princípios',practiceDate:'2026-03-10',reviewOffsets:[10,3,30,90] }), null);
 });
