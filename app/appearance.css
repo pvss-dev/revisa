@@ -128,7 +128,6 @@
   :root[data-theme='dark'] .drawer-stats,
   :root[data-theme='dark'] .exam-drawer-stats,
   :root[data-theme='dark'] .interval-grid label,
-  :root[data-theme='dark'] .upload-box,
   :root[data-theme='dark'] .event-date.done,
   :root[data-theme='dark'] .question-cell:not(.correct):not(.wrong),
   :root[data-theme='dark'] .question-legend i:not(.correct):not(.wrong) {
