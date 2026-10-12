@@ -1,0 +1,262 @@
+@layer components {
+  :root {
+    --surface: #ffffff;
+    --surface-alt: #f4f7f2;
+    --surface-hover: #f8faf6;
+    --border: #e1e9df;
+    --ink: #23332e;
+    --muted: #617468;
+    --paper: #f7f8f4;
+    --line: #e1e9df;
+    --shadow: 0 12px 32px rgba(20, 50, 37, .045);
+    --accent: #246d54;
+    --accent-ui: #246d54;
+    --accent-solid: #246d54;
+    --accent-on: #ffffff;
+    --accent-hover: #1d6049;
+    --accent-lift: #d8e99c;
+    --sidebar-bg: #173d35;
+    --sidebar-active: #2a5848;
+    --hero-start: #245e4b;
+    --hero-end: #397c61;
+    --accent-soft: color-mix(in srgb, var(--accent-ui) 10%, var(--surface));
+    --accent-border: color-mix(in srgb, var(--accent-ui) 32%, var(--surface));
+  }
+
+  :root[data-theme='dark'] {
+    --surface: #1e2927;
+    --surface-alt: #26332f;
+    --surface-hover: #2b3a34;
+    --border: #3b4a42;
+    --ink: #edf4ee;
+    --muted: #b9c9be;
+    --paper: #131c19;
+    --line: #3b4a42;
+    --shadow: 0 12px 34px rgba(0, 0, 0, .18);
+  }
+
+  .sidebar, .auth-showcase { background: var(--sidebar-bg); }
+  .topbar, .auth-panel { background: var(--surface); }
+  .brand-symbol { background: var(--accent-lift); color: var(--sidebar-bg); }
+  .auth-mobile-brand strong { color: var(--ink); }
+  .brand strong span, .auth-brand strong span, .auth-mobile-brand strong span,
+  .auth-hero h1 em, .auth-footer span, .tip-spark, .auth-feature-list>div>span { color: var(--accent-lift); }
+  .nav-item.active { box-shadow: inset 3px 0 var(--accent-lift); }
+  .nav-item:hover, .nav-item.active { background: var(--sidebar-active); }
+  .sidebar-tip { background: color-mix(in srgb, var(--sidebar-bg) 81%, white); border-color: color-mix(in srgb, var(--sidebar-bg) 64%, white); }
+  .sidebar-profile { border-color: color-mix(in srgb, var(--sidebar-bg) 64%, white); }
+  .sidebar-caption, .sidebar-profile small, .nav-item, .logout-button,
+  .auth-hero>p, .auth-feature-list small, .auth-footer { color: var(--sidebar-muted, #bdd3c5); }
+  .sidebar-tip p { color: #ffffff; }
+  .profile-link:hover .profile-copy b { color: var(--accent-lift); }
+  .hero-banner { background: linear-gradient(115deg, var(--hero-start), var(--hero-end)); }
+  .hero-banner p { color: var(--hero-muted, #d7e9db); }
+  .hero-banner button, .hero-kicker, .art-star { color: var(--hero-highlight, var(--accent-lift)); }
+  .hero-kicker span { background: var(--hero-highlight, var(--accent-lift)); }
+  .circle-front { background: color-mix(in srgb, var(--accent-lift) 60%, var(--hero-end)); color: var(--sidebar-bg); }
+  .circle-back, .art-line { border-color: color-mix(in srgb, var(--accent-lift) 45%, transparent); }
+
+  .button.primary { background: var(--accent-solid); color: var(--accent-on); border-color: var(--accent-solid); }
+  .button.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+  .button.secondary { background: var(--surface); color: var(--ink); border-color: var(--border); }
+  .button.secondary:hover, .icon-button:hover { background: var(--surface-hover); }
+  .eyebrow, .section-overline, .text-button, .auth-switch button, .event-details button:hover,
+  .event-action, .done-label, .topics-summary>div, .exam-percent,
+  .exam-card-bottom>span:last-child, .drawer-subject, .timeline-result,
+  .timeline-item>button, .schedule-preview strong, .result-preview strong,
+  .pomodoro-counts strong, .pomodoro-next strong, .pomodoro-mode-tabs button.active,
+  .subject-row-head strong, .drawer-kicker { color: var(--accent-ui); }
+  .eyebrow-dot, .progress-track>div, .mini-track i, .exam-progress>div,
+  .pomodoro-dots i.done { background: var(--accent-solid); }
+  .timeline-item.done .timeline-marker { background: var(--accent-solid); color: var(--accent-on); border-color: var(--accent-solid); }
+  .schedule-preview>b, .question-help b { color: var(--ink); }
+  .info-note { color: var(--muted); }
+  .stat-icon.green, .auth-icon, .panel-badge, .event-date, .event-date.today,
+  .status-pill.today, .status-pill.done, .empty-state>span, .exam-intro-icon,
+  .modal-icon, .stage-tag, .question-cell.correct, .question-legend i.correct,
+  .pomodoro-dial-icon { background: var(--accent-soft); color: var(--accent-ui); }
+  .calendar-day.selected, .calendar-day:hover, .exam-intro, .info-note,
+  .schedule-preview, .result-preview, .session-schedule,
+  .modal-form label.custom-toggle { background: var(--accent-soft); border-color: var(--accent-border); }
+  .stat-icon.green, .exam-intro-icon, .pomodoro-dial-icon { color: var(--accent-ui); }
+  .calendar-day.selected { border-color: var(--accent-ui); }
+  .pomodoro-dial { --dial-color: var(--accent-solid); background: conic-gradient(var(--dial-color) var(--progress), var(--accent-soft) 0); }
+  .pomodoro-dial.shortBreak { --dial-color: #d7a06f; }
+  .pomodoro-dial.longBreak { --dial-color: #8ab0c9; }
+  .pomodoro-sound input, .custom-toggle input[type=checkbox] { accent-color: var(--accent-solid); }
+  .auth-form input:focus, .modal-form input:focus, .modal-form select:focus,
+  .search-field input:focus, .profile-form input:focus, .interval-grid input:focus,
+  .pomodoro-fields label>span:focus-within, .appearance-hex-field:focus-within {
+    border-color: var(--accent-ui); box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  :where(button, input, select):focus-visible { outline: 2px solid var(--accent-ui); outline-offset: 2px; }
+
+  /* These selectors are shared across the dashboard, forms, drawers, exams and Pomodoro. */
+  :root[data-theme='dark'] .stat-card,
+  :root[data-theme='dark'] .panel,
+  :root[data-theme='dark'] .calendar-day,
+  :root[data-theme='dark'] .topics-summary>div,
+  :root[data-theme='dark'] .search-field,
+  :root[data-theme='dark'] .select-field,
+  :root[data-theme='dark'] .topic-row,
+  :root[data-theme='dark'] .exam-card,
+  :root[data-theme='dark'] .drawer,
+  :root[data-theme='dark'] .modal-card,
+  :root[data-theme='dark'] .auth-form input,
+  :root[data-theme='dark'] .modal-form input,
+  :root[data-theme='dark'] .modal-form select,
+  :root[data-theme='dark'] .profile-form input,
+  :root[data-theme='dark'] .interval-grid input,
+  :root[data-theme='dark'] .pomodoro-fields label>span,
+  :root[data-theme='dark'] .pomodoro-dial-inner,
+  :root[data-theme='dark'] .pomodoro-mode-tabs button.active,
+  :root[data-theme='dark'] .segmented button.active,
+  :root[data-theme='dark'] .question-cell,
+  :root[data-theme='dark'] .question-legend i,
+  :root[data-theme='dark'] .appearance-theme,
+  :root[data-theme='dark'] .appearance-swatch,
+  :root[data-theme='dark'] .appearance-hex-field {
+    background: var(--surface); color: var(--ink); border-color: var(--border);
+  }
+  :root[data-theme='dark'] .topic-row:hover,
+  :root[data-theme='dark'] .exam-card:hover,
+  :root[data-theme='dark'] .icon-button:hover { background: var(--surface-hover); }
+  :root[data-theme='dark'] .segmented,
+  :root[data-theme='dark'] .pomodoro-mode-tabs,
+  :root[data-theme='dark'] .pomodoro-counts>div,
+  :root[data-theme='dark'] .drawer-stats,
+  :root[data-theme='dark'] .exam-drawer-stats,
+  :root[data-theme='dark'] .interval-grid label,
+  :root[data-theme='dark'] .upload-box,
+  :root[data-theme='dark'] .event-date.done,
+  :root[data-theme='dark'] .question-cell:not(.correct):not(.wrong),
+  :root[data-theme='dark'] .question-legend i:not(.correct):not(.wrong) {
+    background: var(--surface-alt); color: var(--ink); border-color: var(--border);
+  }
+  :root[data-theme='dark'] .auth-icon,
+  :root[data-theme='dark'] .panel-badge,
+  :root[data-theme='dark'] .event-date,
+  :root[data-theme='dark'] .event-date.today,
+  :root[data-theme='dark'] .status-pill.today,
+  :root[data-theme='dark'] .status-pill.done,
+  :root[data-theme='dark'] .empty-state>span,
+  :root[data-theme='dark'] .exam-intro-icon,
+  :root[data-theme='dark'] .modal-icon,
+  :root[data-theme='dark'] .stage-tag,
+  :root[data-theme='dark'] .question-cell.correct,
+  :root[data-theme='dark'] .question-legend i.correct,
+  :root[data-theme='dark'] .pomodoro-dial-icon {
+    background: var(--accent-soft); color: var(--accent-ui); border-color: var(--accent-border);
+  }
+  :root[data-theme='dark'] .calendar-day.selected,
+  :root[data-theme='dark'] .calendar-day:hover,
+  :root[data-theme='dark'] .exam-intro,
+  :root[data-theme='dark'] .info-note,
+  :root[data-theme='dark'] .schedule-preview,
+  :root[data-theme='dark'] .result-preview,
+  :root[data-theme='dark'] .session-schedule,
+  :root[data-theme='dark'] .modal-form label.custom-toggle {
+    background: var(--accent-soft); color: var(--ink); border-color: var(--accent-border);
+  }
+  :root[data-theme='dark'] .event-date.overdue,
+  :root[data-theme='dark'] .status-pill.overdue,
+  :root[data-theme='dark'] .priority-pill.alta,
+  :root[data-theme='dark'] .question-cell.wrong,
+  :root[data-theme='dark'] .question-legend i.wrong {
+    background: #3b2923; color: #f2b49b; border-color: #664139;
+  }
+  :root[data-theme='dark'] .priority-pill.media { background: #3b3222; color: #f3d086; }
+  :root[data-theme='dark'] .priority-pill.baixa,
+  :root[data-theme='dark'] .status-pill.upcoming { background: var(--surface-alt); color: var(--muted); }
+  :root[data-theme='dark'] .stat-icon.orange,
+  :root[data-theme='dark'] .color-1 { background: #403123; color: #f0bd88; }
+  :root[data-theme='dark'] .stat-icon.rose,
+  :root[data-theme='dark'] .color-3 { background: #3d292d; color: #edabb2; }
+  :root[data-theme='dark'] .stat-icon.blue,
+  :root[data-theme='dark'] .color-2 { background: #253748; color: #a6cbef; }
+  :root[data-theme='dark'] .color-0 { background: var(--accent-soft); color: var(--accent-ui); }
+  :root[data-theme='dark'] .color-4 { background: #342e48; color: #c7b7f1; }
+
+  :root[data-theme='dark'] .breadcrumb strong,
+  :root[data-theme='dark'] .event-details button,
+  :root[data-theme='dark'] .calendar-day b,
+  :root[data-theme='dark'] .topics-summary b,
+  :root[data-theme='dark'] .topic-name b,
+  :root[data-theme='dark'] .auth-form label,
+  :root[data-theme='dark'] .modal-form label,
+  :root[data-theme='dark'] .profile-form label,
+  :root[data-theme='dark'] .interval-grid label,
+  :root[data-theme='dark'] .interval-grid input,
+  :root[data-theme='dark'] .select-field select,
+  :root[data-theme='dark'] .pomodoro-fields label,
+  :root[data-theme='dark'] .pomodoro-fields input,
+  :root[data-theme='dark'] .pomodoro-clock,
+  :root[data-theme='dark'] .pomodoro-mode-name,
+  :root[data-theme='dark'] .appearance-hex-field input { color: var(--ink); }
+  :root[data-theme='dark'] .stat-card,
+  :root[data-theme='dark'] .panel,
+  :root[data-theme='dark'] .topic-row,
+  :root[data-theme='dark'] .exam-card,
+  :root[data-theme='dark'] .table-head,
+  :root[data-theme='dark'] .event-row,
+  :root[data-theme='dark'] .settings-intro,
+  :root[data-theme='dark'] .pomodoro-cycle { border-color: var(--border); }
+  :root[data-theme='dark'] .modal-head { border-color: var(--border); }
+
+  .breadcrumb, .today-chip, .page-heading p, .stat-card small, .event-details span,
+  .subject-row small, .empty-state p, .agenda-toolbar>span, .topics-summary span,
+  .table-head, .topic-name small, .topic-progress small, .next-date,
+  .exam-card p, .exam-card-bottom, .drawer-tags>span:last-child,
+  .drawer-stats span, .exam-drawer-stats span, .drawer-section-head span,
+  .timeline-item small, .modal-head p, .modal-form label small,
+  .question-help, .question-legend, .settings-intro p, .interval-grid label span,
+  .schedule-preview span, .custom-toggle small, .interval-actions>span,
+  .pomodoro-mode-tabs button, .pomodoro-status, .pomodoro-next,
+  .pomodoro-card-heading p, .pomodoro-counts span, .pomodoro-cycle span,
+  .pomodoro-fields small, .appearance-section p, .appearance-footer span {
+    color: var(--muted);
+  }
+  :root[data-theme='dark'] .form-error { background: #3f2727; color: #ffbbb4; }
+  :root[data-theme='dark'] .progress-track,
+  :root[data-theme='dark'] .mini-track,
+  :root[data-theme='dark'] .exam-progress,
+  :root[data-theme='dark'] .pomodoro-dots i:not(.done) { background: var(--surface-alt); }
+  :root[data-theme='dark'] .pomodoro-dial-inner { box-shadow: inset 0 0 0 1px var(--border); }
+  :root[data-theme='dark'] .toast { background: var(--accent-solid); color: var(--accent-on); }
+  :root[data-theme='dark'] .toast button { color: var(--accent-on); }
+
+  .appearance-layout { display: grid; gap: 20px; max-width: 1100px; }
+  .appearance-section { padding: 26px 28px; display: grid; gap: 20px; }
+  .appearance-section h3 { margin: 0 0 12px; font-size: 14px; }
+  .appearance-theme-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .appearance-theme { display: flex; align-items: flex-start; gap: 12px; min-height: 108px; border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: left; background: var(--surface); color: var(--ink); }
+  .appearance-theme:hover, .appearance-swatch:hover { border-color: var(--accent-border); }
+  .appearance-theme.selected, .appearance-swatch.selected { background: var(--accent-soft); border-color: var(--accent-ui); }
+  :root[data-theme='dark'] .appearance-theme.selected,
+  :root[data-theme='dark'] .appearance-swatch.selected { background: var(--accent-soft); border-color: var(--accent-ui); }
+  :root[data-theme='dark'] .pomodoro-mode-tabs button.active { color: var(--accent-ui); }
+  .appearance-theme-icon { width: 37px; height: 37px; display: grid; place-items: center; flex: none; border-radius: 10px; background: var(--accent-soft); color: var(--accent-ui); }
+  .appearance-theme-copy { display: grid; gap: 5px; flex: 1; min-width: 0; }
+  .appearance-theme-copy b { font-size: 13px; }
+  .appearance-theme-copy small { color: var(--muted); font-size: 11px; line-height: 1.45; }
+  .appearance-selected-icon { display: none; color: var(--accent-ui); }
+  .appearance-theme.selected .appearance-selected-icon { display: inline-flex; }
+  .appearance-swatches { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+  .appearance-swatch { display: flex; align-items: center; gap: 9px; min-height: 49px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--ink); text-align: left; padding: 9px 11px; font-size: 12px; font-weight: 800; }
+  .appearance-swatch-dot { width: 22px; height: 22px; border: 2px solid color-mix(in srgb, var(--surface) 72%, transparent); border-radius: 50%; flex: none; }
+  .appearance-swatch svg { color: var(--accent-ui); margin-left: auto; }
+  .appearance-custom { border-top: 1px solid var(--border); padding-top: 20px; }
+  .appearance-custom h3 { display: flex; align-items: center; gap: 9px; margin: 0 0 4px; }
+  .appearance-custom p { margin: 0 0 15px; font-size: 12px; }
+  .appearance-custom-badge { background: var(--accent-soft); color: var(--accent-ui); border-radius: 100px; padding: 4px 8px; font: 800 10px 'DM Sans', sans-serif; }
+  .appearance-custom-form { display: flex; align-items: end; gap: 12px; flex-wrap: wrap; }
+  .appearance-color-picker { width: 51px; height: 47px; overflow: hidden; flex: none; border: 1px solid var(--border); border-radius: 10px; cursor: pointer; }
+  .appearance-color-picker input { width: 65px; height: 65px; margin: -9px; padding: 0; border: 0; cursor: pointer; }
+  .appearance-hex-field { display: grid; gap: 5px; min-width: 155px; color: var(--muted); font-size: 11px; font-weight: 800; }
+  .appearance-hex-field input { width: 165px; height: 47px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); color: var(--ink); padding: 0 12px; font-size: 14px; font-weight: 800; outline: 0; text-transform: uppercase; }
+  .appearance-custom-form .button { height: 47px; }
+  .appearance-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 2px; }
+  .appearance-footer span { font-size: 12px; }
+  @media (max-width: 750px) { .appearance-theme-grid { grid-template-columns: 1fr; } .appearance-theme { min-height: 75px; } }
+  @media (max-width: 580px) { .appearance-section { padding: 21px; } .appearance-swatches { grid-template-columns: repeat(2, minmax(0, 1fr)); } .appearance-footer { align-items: stretch; flex-direction: column; } .appearance-custom-form .button { width: 100%; } }
+}

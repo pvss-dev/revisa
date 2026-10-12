@@ -1,4 +1,4 @@
-import { getUser, verifyPassword } from '@/lib/auth';
+import { getUser, verifyPassword, publicUserSelect } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { authenticated, bodyJson, error, safeMutation } from '@/lib/http';
 
@@ -28,7 +28,7 @@ export async function PATCH(request) {
     const updated = await prisma.user.update({
       where: { id: user.id },
       data: { name, email },
-      select: { id: true, name: true, email: true, reviewOffsets: true },
+      select: publicUserSelect,
     });
     return Response.json({ user: updated }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (e) {

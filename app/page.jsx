@@ -5,9 +5,11 @@ import {
   ArrowRight, BookOpen, CalendarDays, Check, CheckCircle2, ChevronDown, ChevronLeft,
   ChevronRight, CircleHelp, Clock3, Download, FileSpreadsheet, Filter, Flag,
   LayoutDashboard, LockKeyhole, LogOut, Menu, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Plus, Search, Settings2, Sparkles,
-  Target, Timer, Trash2, TrendingUp, Upload, UserRound, X,
+  Target, Timer, Trash2, TrendingUp, Upload, UserRound, X, Palette,
 } from 'lucide-react';
 import { addDays, maxReviewIntervals, minReviewIntervals, offsets, validReviewOffsets } from '@/lib/validation';
+import { appearanceFromUser, appearanceTokens, defaultAppearance, resolvedTheme } from '@/lib/appearance';
+import AppearanceSettings from './components/AppearanceSettings';
 import PomodoroTimer from './components/PomodoroTimer';
 
 const stageName = stage => stage === 0 ? 'Questões iniciais' : `Revisão ${stage}`;
@@ -19,6 +21,7 @@ const navItems = [
   { key: 'topics', label: 'Meus assuntos', icon: BookOpen },
   { key: 'exams', label: 'Provas completas', icon: Target },
   { key: 'settings', label: 'Intervalos', icon: Settings2 },
+  { key: 'appearance', label: 'Aparência', icon: Palette },
   { key: 'profile', label: 'Meu perfil', icon: UserRound },
 ];
 
@@ -46,6 +49,7 @@ async function api(path, options = {}) {
 
 export default function Home() {
   const [user, setUser] = useState(undefined);
+  const [appearance, setAppearance] = useState(defaultAppearance);
   const [authMode, setAuthMode] = useState('login');
   const [authFields, setAuthFields] = useState({ name: '', email: '', password: '' });
   const [authBusy, setAuthBusy] = useState(false);
@@ -82,25 +86,38 @@ export default function Home() {
   }
   useEffect(() => {
     setToday(todayLocal());
-    api('/api/me').then(d => { setUser(d.user); if (d.user) refresh(); }).catch(() => setUser(null));
+    api('/api/me').then(d => { setUser(d.user); setAppearance(appearanceFromUser(d.user)); if (d.user) refresh(); }).catch(() => setUser(null));
     return () => clearTimeout(toastTimer.current);
   }, []);
   useEffect(() => {
     try { setSidebarHidden(window.localStorage.getItem('revisa-sidebar-hidden') === 'true'); } catch { /* armazenamento indisponível */ }
   }, []);
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const apply = () => {
+      const mode = resolvedTheme(appearance.theme, media.matches);
+      const root = document.documentElement;
+      root.dataset.theme = mode;
+      root.style.colorScheme = mode;
+      Object.entries(appearanceTokens(appearance.accentColor, mode)).forEach(([name, value]) => root.style.setProperty(name, value));
+    };
+    apply();
+    media.addEventListener('change', apply);
+    return () => media.removeEventListener('change', apply);
+  }, [appearance]);
 
   async function submitAuth(e) {
     e.preventDefault(); setAuthBusy(true); setAuthError('');
     try {
       const d = await api(`/api/auth/${authMode === 'register' ? 'register' : 'login'}`, { method: 'POST', body: JSON.stringify(authFields) });
-      setUser(d.user); setAuthFields({ name: '', email: '', password: '' });
+      setUser(d.user); setAppearance(appearanceFromUser(d.user)); setAuthFields({ name: '', email: '', password: '' });
       await refresh();
     } catch (err) { setAuthError(err.message); }
     finally { setAuthBusy(false); }
   }
   async function logout() {
     await api('/api/auth/logout', { method: 'POST' });
-    setUser(null); setTopics([]); setExams([]); setView('overview');
+    setUser(null); setAppearance(defaultAppearance); setTopics([]); setExams([]); setView('overview');
   }
 
   const events = useMemo(() => topics.flatMap(topic => Array.from({ length: topicOffsets(topic, user?.reviewOffsets).length + 1 }, (_, stage) => {
@@ -130,10 +147,10 @@ export default function Home() {
     return [...map.values()].sort((a,b) => b.topics - a.topics);
   }, [topics, user?.reviewOffsets]);
 
-  if (user === undefined) return <div className="boot"><div className="brand-symbol bg-revisa-lime"><BookOpen size={28}/></div><span>Carregando seu espaço de estudo...</span></div>;
+  if (user === undefined) return <div className="boot"><div className="brand-symbol"><BookOpen size={28}/></div><span>Carregando seu espaço de estudo...</span></div>;
   if (!user) return <div className="auth-page grid min-h-screen">
-    <div className="auth-showcase bg-revisa-dark">
-      <div className="auth-brand"><div className="brand-symbol bg-revisa-lime"><BookOpen size={23}/></div><strong>revisa<span>.</span></strong></div>
+    <div className="auth-showcase">
+      <div className="auth-brand"><div className="brand-symbol"><BookOpen size={23}/></div><strong>revisa<span>.</span></strong></div>
       <div className="auth-hero">
         <div className="eyebrow light"><span className="eyebrow-dot"/> SEU ESTUDO, EM DIA</div>
         <h1>Estude hoje.<br/><em>Lembre amanhã.</em></h1>
@@ -149,7 +166,7 @@ export default function Home() {
     </div>
     <div className="auth-panel">
       <div className="auth-card">
-        <div className="auth-mobile-brand"><div className="brand-symbol bg-revisa-lime"><BookOpen size={21}/></div><strong>revisa<span>.</span></strong></div>
+        <div className="auth-mobile-brand"><div className="brand-symbol"><BookOpen size={21}/></div><strong>revisa<span>.</span></strong></div>
         <div className="auth-icon"><Sparkles size={24}/></div>
         <h2>{authMode === 'register' ? 'Comece por aqui' : 'Boas-vindas de volta'}</h2>
         <p>{authMode === 'register' ? 'Crie sua conta para organizar seus estudos.' : 'Entre para continuar de onde parou.'}</p>
@@ -165,7 +182,17 @@ export default function Home() {
     </div>
   </div>;
 
-  function chooseView(key) { setView(key); setMenuOpen(false); setSelectedTopic(null); setSelectedExam(null); }
+  function chooseView(key) { if (view === 'appearance') setAppearance(appearanceFromUser(user)); setView(key); setMenuOpen(false); setSelectedTopic(null); setSelectedExam(null); }
+  async function saveAppearance(next) {
+    const previous = appearanceFromUser(user);
+    setAppearance(next);
+    try {
+      const result = await api('/api/settings/appearance', { method: 'PATCH', body: JSON.stringify(next) });
+      setAppearance(result.appearance);
+      setUser(current => ({ ...current, appearanceTheme: result.appearance.theme, accentColor: result.appearance.accentColor }));
+      notify('Aparência salva.');
+    } catch (failure) { setAppearance(previous); throw failure; }
+  }
   function toggleSidebar() {
     const hidden = !sidebarHidden;
     setSidebarHidden(hidden);
@@ -176,8 +203,8 @@ export default function Home() {
   const greeting = new Date().getHours() < 12 ? 'Bom dia' : new Date().getHours() < 18 ? 'Boa tarde' : 'Boa noite';
 
   return <div className={`app-shell flex min-h-screen ${sidebarHidden ? 'sidebar-hidden' : ''}`}>
-    <aside id="app-sidebar" className={`sidebar flex flex-none flex-col bg-revisa-dark ${menuOpen ? 'open' : ''}`}>
-      <div className="sidebar-top"><div className="brand"><div className="brand-symbol bg-revisa-lime"><BookOpen size={21}/></div><strong>revisa<span>.</span></strong></div><button className="icon-button mobile-close" onClick={() => setMenuOpen(false)} aria-label="Fechar menu"><X size={20}/></button></div>
+    <aside id="app-sidebar" className={`sidebar flex flex-none flex-col ${menuOpen ? 'open' : ''}`}>
+      <div className="sidebar-top"><div className="brand"><div className="brand-symbol"><BookOpen size={21}/></div><strong>revisa<span>.</span></strong></div><button className="icon-button mobile-close" onClick={() => setMenuOpen(false)} aria-label="Fechar menu"><X size={20}/></button></div>
       <div className="sidebar-caption">ESPAÇO DE ESTUDO</div>
       <nav className="nav-list grid gap-1.5" aria-label="Navegação principal">{navItems.map(item => <button key={item.key} className={`nav-item ${view === item.key ? 'active' : ''}`} onClick={() => chooseView(item.key)}><item.icon size={19}/><span>{item.label}</span>{item.key === 'agenda' && overdue > 0 && <i>{overdue}</i>}</button>)}</nav>
       <div className="sidebar-spacer flex-1"/>
@@ -186,7 +213,7 @@ export default function Home() {
     </aside>
     {menuOpen && <button className="mobile-overlay" onClick={() => setMenuOpen(false)} aria-label="Fechar menu"/>}
     <main className="main-area min-w-0 flex-1">
-      <header className="topbar flex items-center justify-between bg-revisa-surface"><div className="topbar-start flex min-w-0 items-center gap-4"><button className="icon-button sidebar-toggle" onClick={toggleSidebar} aria-label={sidebarHidden ? 'Mostrar menu lateral' : 'Esconder menu lateral'} title={sidebarHidden ? 'Mostrar menu lateral' : 'Esconder menu lateral'} aria-expanded={!sidebarHidden} aria-controls="app-sidebar">{sidebarHidden ? <PanelLeftOpen size={21}/> : <PanelLeftClose size={21}/>}</button><button className="icon-button menu-button" onClick={() => setMenuOpen(true)} aria-label="Abrir menu" aria-expanded={menuOpen} aria-controls="app-sidebar"><Menu size={21}/></button><div className="breadcrumb">Meu espaço <ChevronRight size={14}/> <strong>{navItems.find(n => n.key === view)?.label}</strong></div></div><div className="topbar-right flex items-center gap-[22px]"><div className="today-chip"><CalendarDays size={16}/>{formatDate(today, { weekday: 'long', day: 'numeric', month: 'long' })}</div><button className="top-avatar" onClick={() => chooseView('profile')} title="Meu perfil" aria-label="Abrir meu perfil">{initials(user.name)}</button></div></header>
+      <header className="topbar flex items-center justify-between"><div className="topbar-start flex min-w-0 items-center gap-4"><button className="icon-button sidebar-toggle" onClick={toggleSidebar} aria-label={sidebarHidden ? 'Mostrar menu lateral' : 'Esconder menu lateral'} title={sidebarHidden ? 'Mostrar menu lateral' : 'Esconder menu lateral'} aria-expanded={!sidebarHidden} aria-controls="app-sidebar">{sidebarHidden ? <PanelLeftOpen size={21}/> : <PanelLeftClose size={21}/>}</button><button className="icon-button menu-button" onClick={() => setMenuOpen(true)} aria-label="Abrir menu" aria-expanded={menuOpen} aria-controls="app-sidebar"><Menu size={21}/></button><div className="breadcrumb">Meu espaço <ChevronRight size={14}/> <strong>{navItems.find(n => n.key === view)?.label}</strong></div></div><div className="topbar-right flex items-center gap-[22px]"><div className="today-chip"><CalendarDays size={16}/>{formatDate(today, { weekday: 'long', day: 'numeric', month: 'long' })}</div><button className="top-avatar" onClick={() => chooseView('profile')} title="Meu perfil" aria-label="Abrir meu perfil">{initials(user.name)}</button></div></header>
       <div className="page-content mx-auto">
         {view === 'overview' && <>
           <div className="page-heading overview-heading"><div><div className="eyebrow"><span className="eyebrow-dot"/> SEU PAINEL DE ESTUDOS</div><h1>{greeting}, {user.name.split(' ')[0]} <span className="wave">✳</span></h1><p>Veja o que precisa da sua atenção e siga no seu ritmo.</p></div><button className="button primary" onClick={() => setModal({ type: 'topic' })}><Plus size={18}/> Novo assunto</button></div>
@@ -208,6 +235,7 @@ export default function Home() {
           <section className="panel topic-table"><div className="table-head"><span>ASSUNTO</span><span>PRIORIDADE</span><span>PROGRESSO</span><span>PRÓXIMA REVISÃO</span><span/></div>{filteredTopics.length ? filteredTopics.map((topic,i)=>{ const done=topic.attempts?.length||0;const planned=topicOffsets(topic,user.reviewOffsets).length+1;const next=Array.from({length:planned},(_,stage)=>({stage,date:stageDate(topic,stage,user.reviewOffsets)})).find(x=>!topic.attempts?.some(a=>Number(a.stage)===x.stage));return <button className="topic-row" key={topic.id} onClick={()=>setSelectedTopic(topic)}><div className="topic-name"><span className={`topic-icon color-${i%5}`}><BookOpen size={17}/></span><div><b>{topic.title}</b><small>{topic.subject}</small></div></div><span className={`priority-pill ${topic.priority.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu,'')}`}>{topic.priority}</span><div className="topic-progress"><div className="mini-track"><i style={{width:`${pct(done,planned)}%`}}/></div><small>{done}/{planned}</small></div><div className="next-date">{next ? <><CalendarDays size={16}/>{formatDate(next.date,{day:'2-digit',month:'short',year:'numeric'})}</> : <span className="done-label"><Check size={15}/> Completo</span>}</div><ChevronRight className="row-arrow" size={18}/></button>}) : <Empty icon={BookOpen} title={query || priorityFilter !== 'Todas' ? 'Nenhum assunto encontrado' : 'Sua biblioteca está vazia'} text={query || priorityFilter !== 'Todas' ? 'Tente mudar a busca ou o filtro.' : 'Adicione seu primeiro assunto ou importe sua planilha.'} action={!query && priorityFilter === 'Todas' ? 'Adicionar assunto' : null} onClick={()=>setModal({ type:'topic' })}/>}</section>
         </>}
         {view === 'settings' && <ReviewSettings initial={user.reviewOffsets || offsets.slice(1)} onSave={async reviewOffsets => { const result = await api('/api/settings/reviews', { method: 'PATCH', body: JSON.stringify({ reviewOffsets }) }); setUser(current => ({ ...current, reviewOffsets: result.reviewOffsets })); notify('Intervalos atualizados. A agenda foi recalculada.'); }} />}
+        {view === 'appearance' && <AppearanceSettings appearance={appearance} onPreview={setAppearance} onSave={saveAppearance}/>}
         <PomodoroTimer key={user.id} userId={user.id} visible={view === 'pomodoro'} onComplete={notify}/>
         {view === 'profile' && <ProfileSettings user={user} onProfileSave={async details => { const result = await api('/api/me', { method: 'PATCH', body: JSON.stringify(details) }); setUser(result.user); notify('Perfil atualizado.'); }} onPasswordSave={async details => { await api('/api/me/password', { method: 'PUT', body: JSON.stringify(details) }); notify('Senha atualizada. As outras sessões foram encerradas.'); }} />}
         {view === 'exams' && <>

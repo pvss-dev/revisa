@@ -12,6 +12,8 @@ model User {
   email         String          @unique
   passwordHash  String          @map("password_hash")
   reviewOffsets Int[]           @default([7, 21, 60, 100]) @map("review_offsets")
+  appearanceTheme String        @default("light") @map("appearance_theme")
+  accentColor     String        @default("#246D54") @map("accent_color")
   createdAt     DateTime        @default(now()) @map("created_at")
   sessions      Session[]
   topics        Topic[]

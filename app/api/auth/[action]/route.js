@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db';
-import { hashPassword, verifyPassword, issueSession, removeSession } from '@/lib/auth';
+import { hashPassword, verifyPassword, issueSession, removeSession, publicUser, publicUserSelect } from '@/lib/auth';
 import { bodyJson, error, safeMutation } from '@/lib/http';
 
 export async function POST(request, { params }) {
@@ -24,7 +24,7 @@ export async function POST(request, { params }) {
     try {
       const user = await prisma.user.create({
         data: { name, email, passwordHash: hashPassword(password) },
-        select: { id: true, name: true, email: true, reviewOffsets: true },
+        select: publicUserSelect,
       });
       await issueSession(user.id);
       return Response.json({ user }, { status: 201 });
@@ -36,5 +36,5 @@ export async function POST(request, { params }) {
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user || !verifyPassword(password, user.passwordHash)) return error('E-mail ou senha incorretos.', 401);
   await issueSession(user.id);
-  return Response.json({ user: { id: user.id, name: user.name, email: user.email, reviewOffsets: user.reviewOffsets } });
+  return Response.json({ user: publicUser(user) });
 }

@@ -1,4 +1,5 @@
 import './globals.css';
+import './appearance.css';
 
 export const metadata = {
   title: 'Revisa - seu plano de revisão',
