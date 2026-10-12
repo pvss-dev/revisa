@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight, BookOpen, CalendarDays, Check, CheckCircle2, ChevronDown, ChevronLeft,
   ChevronRight, CircleHelp, Clock3, Filter, Flag,
@@ -80,6 +80,129 @@ async function api(path, options = {}) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || 'Não foi possível concluir a operação.');
   return data;
+}
+
+function SelectMenu({ id, value, onChange, options, ariaLabel, icon: Icon, className = '', disabled = false, required = false }) {
+  const generatedId = useId().replaceAll(':', '');
+  const controlId = id || `select-${generatedId}`;
+  const listboxId = `${controlId}-options`;
+  const rootRef = useRef(null);
+  const triggerRef = useRef(null);
+  const normalizedOptions = options.map(option => typeof option === 'string'
+    ? { value: option, label: option }
+    : { ...option, value: String(option.value) });
+  const selectedIndex = normalizedOptions.findIndex(option => option.value === String(value ?? ''));
+  const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(Math.max(0, selectedIndex));
+  const selectedOption = normalizedOptions[selectedIndex];
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const closeOnOutsideClick = event => {
+      if (!rootRef.current?.contains(event.target)) setOpen(false);
+    };
+    document.addEventListener('pointerdown', closeOnOutsideClick);
+    return () => document.removeEventListener('pointerdown', closeOnOutsideClick);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const nextIndex = selectedIndex >= 0 ? selectedIndex : normalizedOptions.findIndex(option => !option.disabled);
+    setActiveIndex(Math.max(0, nextIndex));
+  }, [open, selectedIndex]);
+
+  useEffect(() => {
+    if (!open) return;
+    document.getElementById(`${listboxId}-option-${activeIndex}`)?.scrollIntoView({ block: 'nearest' });
+  }, [activeIndex, listboxId, open]);
+
+  function moveActive(direction) {
+    if (!normalizedOptions.length) return;
+    let next = activeIndex;
+    do next = (next + direction + normalizedOptions.length) % normalizedOptions.length;
+    while (normalizedOptions[next]?.disabled && next !== activeIndex);
+    setActiveIndex(next);
+  }
+
+  function choose(option) {
+    if (!option || option.disabled) return;
+    onChange(option.value);
+    setOpen(false);
+    requestAnimationFrame(() => triggerRef.current?.focus());
+  }
+
+  function handleKeyDown(event) {
+    if (disabled) return;
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (!open) setOpen(true);
+      else moveActive(event.key === 'ArrowDown' ? 1 : -1);
+      return;
+    }
+    if (event.key === 'Home' && open) {
+      event.preventDefault();
+      setActiveIndex(Math.max(0, normalizedOptions.findIndex(option => !option.disabled)));
+      return;
+    }
+    if (event.key === 'End' && open) {
+      event.preventDefault();
+      for (let index = normalizedOptions.length - 1; index >= 0; index -= 1) {
+        if (!normalizedOptions[index].disabled) { setActiveIndex(index); break; }
+      }
+      return;
+    }
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      if (open) choose(normalizedOptions[activeIndex]);
+      else setOpen(true);
+      return;
+    }
+    if (event.key === 'Escape' && open) {
+      event.preventDefault();
+      setOpen(false);
+      triggerRef.current?.focus();
+      return;
+    }
+    if (event.key === 'Tab') setOpen(false);
+  }
+
+  return <div ref={rootRef} className={`custom-select ${className} ${open ? 'open' : ''} ${disabled ? 'disabled' : ''}`} onKeyDown={handleKeyDown}>
+    {Icon && <Icon className="custom-select-leading" size={17}/>}
+    <button
+      ref={triggerRef}
+      id={controlId}
+      type="button"
+      role="combobox"
+      className="custom-select-trigger"
+      aria-label={ariaLabel}
+      aria-controls={listboxId}
+      aria-expanded={open}
+      aria-haspopup="listbox"
+      aria-activedescendant={open ? `${listboxId}-option-${activeIndex}` : undefined}
+      aria-required={required || undefined}
+      disabled={disabled}
+      onClick={() => setOpen(current => !current)}
+    >
+      <span>{selectedOption?.label || 'Selecione uma opção'}</span>
+      <ChevronDown className="custom-select-chevron" size={16}/>
+    </button>
+    {open && <div id={listboxId} className="custom-select-menu" role="listbox" aria-label={ariaLabel}>
+      {normalizedOptions.map((option, index) => <button
+        id={`${listboxId}-option-${index}`}
+        type="button"
+        role="option"
+        aria-selected={index === selectedIndex}
+        className={`custom-select-option ${index === activeIndex ? 'active' : ''} ${index === selectedIndex ? 'selected' : ''}`}
+        disabled={option.disabled}
+        key={`${option.value}-${index}`}
+        onMouseEnter={() => setActiveIndex(index)}
+        onClick={() => choose(option)}
+      >
+        <span>{option.label}</span>
+        {index === selectedIndex && <Check size={15}/>}
+      </button>)}
+    </div>}
+  </div>;
 }
 
 export default function RevisaApp({ initialView = 'overview' }) {
@@ -296,7 +419,6 @@ export default function RevisaApp({ initialView = 'overview' }) {
           </div>
         </section>)}
       </nav>
-      <div className="sidebar-tip"><div className="tip-spark"><Sparkles size={18}/></div><b>Um passo de cada vez.</b><p>Pequenas revisões frequentes fazem a diferença.</p></div>
       <div className="sidebar-profile flex items-center gap-2.5"><button className="profile-link sidebar-tooltip-target" data-tooltip="Meu perfil" onClick={() => chooseView('profile')} aria-label="Abrir meu perfil"><span className="avatar">{initials(user.name)}</span><span className="profile-copy"><b>{user.name}</b><small>{user.email}</small></span></button><button className="logout-button sidebar-tooltip-target" data-tooltip="Sair" aria-label="Sair" onClick={logout}><LogOut size={18}/></button></div>
     </aside>
     {menuOpen && <button className="mobile-overlay" onClick={() => setMenuOpen(false)} aria-label="Fechar menu"/>}
@@ -322,9 +444,9 @@ export default function RevisaApp({ initialView = 'overview' }) {
           <div className="list-toolbar content-list-toolbar">
             <div className="search-field"><Search size={18}/><input aria-label="Buscar assuntos" placeholder="Buscar disciplina ou assunto..." value={query} onChange={e=>setQuery(e.target.value)}/></div>
             <div className="content-filter-group">
-              <div className="select-field"><BookOpen size={17}/><select aria-label="Filtrar disciplina" value={disciplineFilter} onChange={e=>{ setDisciplineFilter(e.target.value); setTopicFilter('all'); }}><option value="all">Todas as disciplinas</option>{disciplines.map(discipline=><option key={discipline.id} value={discipline.id}>{discipline.name}</option>)}</select><ChevronDown size={15}/></div>
-              <div className="select-field"><Search size={17}/><select aria-label="Filtrar assunto" value={topicFilter} onChange={e=>setTopicFilter(e.target.value)}><option value="all">Todos os assuntos</option>{filterTopics.map(topic=><option key={topic.id} value={topic.id}>{topic.title}</option>)}</select><ChevronDown size={15}/></div>
-              <div className="select-field"><Filter size={17}/><select aria-label="Filtrar prioridade" value={priorityFilter} onChange={e=>setPriorityFilter(e.target.value)}><option>Todas</option><option>Alta</option><option>Média</option><option>Baixa</option></select><ChevronDown size={15}/></div>
+              <SelectMenu className="select-field" icon={BookOpen} ariaLabel="Filtrar disciplina" value={disciplineFilter} onChange={next=>{ setDisciplineFilter(next); setTopicFilter('all'); }} options={[{ value:'all', label:'Todas as disciplinas' }, ...disciplines.map(discipline=>({ value:discipline.id, label:discipline.name }))]}/>
+              <SelectMenu className="select-field" icon={Search} ariaLabel="Filtrar assunto" value={topicFilter} onChange={setTopicFilter} options={[{ value:'all', label:'Todos os assuntos' }, ...filterTopics.map(topic=>({ value:topic.id, label:topic.title }))]}/>
+              <SelectMenu className="select-field" icon={Filter} ariaLabel="Filtrar prioridade" value={priorityFilter} onChange={setPriorityFilter} options={['Todas','Alta','Média','Baixa']}/>
             </div>
           </div>
           <section className="panel topic-table"><div className="table-head"><span>ASSUNTO</span><span>PRIORIDADE</span><span>PROGRESSO</span><span>PRÓXIMA REVISÃO</span><span/></div>{filteredTopics.length ? filteredTopics.map(topic=>{ const done=topic.attempts?.length||0;const planned=topicOffsets(topic,user.reviewOffsets).length+1;const next=Array.from({length:planned},(_,stage)=>({stage,date:stageDate(topic,stage,user.reviewOffsets)})).find(x=>!topic.attempts?.some(a=>Number(a.stage)===x.stage));return <button className="topic-row" key={topic.id} onClick={()=>setSelectedTopic(topic)}><div className="topic-name"><span className={`topic-icon color-${disciplineColor(topic)}`}><BookOpen size={17}/></span><div><b>{topic.title}</b><small>{topic.subject}</small></div></div><span className={`priority-pill ${topic.priority.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu,'')}`}>{topic.priority}</span><div className="topic-progress"><div className="mini-track"><i style={{width:`${pct(done,planned)}%`}}/></div><small>{done}/{planned}</small></div><div className="next-date">{next ? <><CalendarDays size={16}/>{formatDate(next.date,{day:'2-digit',month:'short',year:'numeric'})}</> : <span className="done-label"><Check size={15}/> Completo</span>}</div><ChevronRight className="row-arrow" size={18}/></button>}) : <Empty icon={BookOpen} title={hasTopicFilters ? 'Nenhum assunto encontrado' : 'Sua biblioteca está vazia'} text={hasTopicFilters ? 'Tente mudar a busca ou os filtros.' : 'Cadastre uma disciplina e adicione seu primeiro assunto.'} action={!hasTopicFilters ? 'Adicionar assunto' : null} onClick={()=>setModal({ type:'topic' })}/>}</section>
@@ -445,7 +567,27 @@ function TopicForm({ topic, disciplines, userOffsets, onSave, onClose, onCreateD
   const [custom,setCustom]=useState(Boolean(topic?.reviewOffsets));
   const [busy,setBusy]=useState(false),[error,setError]=useState('');
   async function submit(e){e.preventDefault();if(!form.disciplineId)return setError('Selecione uma disciplina.');if(custom && !validReviewOffsets(form.reviewOffsets)) return setError('Use de 4 a 20 intervalos em ordem crescente.');setBusy(true);setError('');try{await onSave({...form,disciplineId:Number(form.disciplineId),reviewOffsets:custom ? validReviewOffsets(form.reviewOffsets) : null});}catch(err){setError(err.message);setBusy(false);}}
-  return <><ModalHead icon={BookOpen} title={topic?'Editar assunto':'Novo assunto'} subtitle="Vincule o conteúdo à disciplina correspondente." onClose={onClose}/><form className="modal-form grid gap-[17px]" onSubmit={submit}><div className="discipline-select-block"><div className="form-label-row"><label htmlFor="topic-discipline">Disciplina</label><div className="form-label-actions"><button type="button" className="quick-create-button" onClick={()=>onCreateDiscipline(id=>setForm(current=>({...current,disciplineId:String(id)})))}><Plus size={15}/> Nova disciplina</button></div></div><select id="topic-discipline" required value={form.disciplineId} onChange={e=>setForm({...form,disciplineId:e.target.value})} disabled={!disciplines.length}><option value="">Selecione uma disciplina</option>{disciplines.map(discipline=><option key={discipline.id} value={discipline.id}>{discipline.name}</option>)}</select></div>{!disciplines.length&&<div className="info-note discipline-empty-note"><BookOpen size={17}/><span>Cadastre a primeira disciplina pelo botão acima para continuar.</span></div>}<label>Assunto<input required maxLength={240} value={form.title} onChange={e=>setForm({...form,title:e.target.value})} placeholder="Ex.: Morfologia"/></label><div className="form-grid"><label>Data da aula <small>(opcional)</small><input type="date" value={form.lessonDate} onChange={e=>setForm({...form,lessonDate:e.target.value})}/></label><label>Primeiras questões<input type="date" required value={form.practiceDate} onChange={e=>setForm({...form,practiceDate:e.target.value})}/></label></div><label>Prioridade<select value={form.priority} onChange={e=>setForm({...form,priority:e.target.value})}><option>Alta</option><option>Média</option><option>Baixa</option></select></label><label className="custom-toggle"><input type="checkbox" checked={custom} onChange={e=>setCustom(e.target.checked)}/><span><b>Intervalos próprios para este assunto</b><small>{custom ? 'Defina os dias abaixo.' : `Usando o padrão: ${(userOffsets || offsets.slice(1)).join(', ')} dias.`}</small></span></label>{custom&&<IntervalFields days={form.reviewOffsets} onChange={reviewOffsets=>setForm({...form,reviewOffsets})} prefix="Intervalo deste assunto para a revisão"/>}<div className="info-note"><CalendarDays size={17}/><span>As datas são calculadas após as primeiras questões. Você pode alterar o padrão geral em Intervalos.</span></div>{error&&<div className="form-error">{error}</div>}<div className="modal-actions"><button type="button" className="button secondary" onClick={onClose}>Cancelar</button><button className="button primary" disabled={busy || !disciplines.length || (custom && !validReviewOffsets(form.reviewOffsets))}>{busy?'Salvando...':topic?'Salvar alterações':'Adicionar assunto'}<ArrowRight size={17}/></button></div></form></>;
+  return <>
+    <ModalHead icon={BookOpen} title={topic?'Editar assunto':'Novo assunto'} subtitle="Vincule o conteúdo à disciplina correspondente." onClose={onClose}/>
+    <form className="modal-form grid gap-[17px]" onSubmit={submit}>
+      <div className="discipline-select-block">
+        <div className="form-label-row">
+          <label htmlFor="topic-discipline">Disciplina</label>
+          <div className="form-label-actions"><button type="button" className="quick-create-button" onClick={()=>onCreateDiscipline(id=>setForm(current=>({...current,disciplineId:String(id)})))}><Plus size={15}/> Nova disciplina</button></div>
+        </div>
+        <SelectMenu id="topic-discipline" required ariaLabel="Disciplina" value={form.disciplineId} onChange={disciplineId=>setForm({...form,disciplineId})} disabled={!disciplines.length} options={[{ value:'', label:'Selecione uma disciplina' }, ...disciplines.map(discipline=>({ value:discipline.id, label:discipline.name }))]}/>
+      </div>
+      {!disciplines.length&&<div className="info-note discipline-empty-note"><BookOpen size={17}/><span>Cadastre a primeira disciplina pelo botão acima para continuar.</span></div>}
+      <label>Assunto<input required maxLength={240} value={form.title} onChange={e=>setForm({...form,title:e.target.value})} placeholder="Ex.: Morfologia"/></label>
+      <div className="form-grid"><label>Data da aula <small>(opcional)</small><input type="date" value={form.lessonDate} onChange={e=>setForm({...form,lessonDate:e.target.value})}/></label><label>Primeiras questões<input type="date" required value={form.practiceDate} onChange={e=>setForm({...form,practiceDate:e.target.value})}/></label></div>
+      <div className="modal-select-field"><label htmlFor="topic-priority">Prioridade</label><SelectMenu id="topic-priority" ariaLabel="Prioridade" value={form.priority} onChange={priority=>setForm({...form,priority})} options={['Alta','Média','Baixa']}/></div>
+      <label className="custom-toggle"><input type="checkbox" checked={custom} onChange={e=>setCustom(e.target.checked)}/><span><b>Intervalos próprios para este assunto</b><small>{custom ? 'Defina os dias abaixo.' : `Usando o padrão: ${(userOffsets || offsets.slice(1)).join(', ')} dias.`}</small></span></label>
+      {custom&&<IntervalFields days={form.reviewOffsets} onChange={reviewOffsets=>setForm({...form,reviewOffsets})} prefix="Intervalo deste assunto para a revisão"/>}
+      <div className="info-note"><CalendarDays size={17}/><span>As datas são calculadas após as primeiras questões. Você pode alterar o padrão geral em Intervalos.</span></div>
+      {error&&<div className="form-error">{error}</div>}
+      <div className="modal-actions"><button type="button" className="button secondary" onClick={onClose}>Cancelar</button><button className="button primary" disabled={busy || !disciplines.length || (custom && !validReviewOffsets(form.reviewOffsets))}>{busy?'Salvando...':topic?'Salvar alterações':'Adicionar assunto'}<ArrowRight size={17}/></button></div>
+    </form>
+  </>;
 }
 function DisciplineForm({ discipline, colorIndex, onSave, onClose }) {
   const [name,setName]=useState(discipline?.name||'');

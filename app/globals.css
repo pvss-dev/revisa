@@ -15,7 +15,7 @@
   .content-filter-group { display: flex; justify-content: flex-end; gap: 8px; flex: 1 1 auto; }
   .content-filter-group .select-field { min-width: 170px; }
   .content-filter-group .select-field:nth-child(2) { min-width: 190px; }
-  .content-filter-group .select-field select { width: 100%; min-width: 0; }
+  .content-filter-group .select-field .custom-select-trigger { width: 100%; min-width: 0; }
   .discipline-empty-note { align-items: center; }
   .discipline-empty-note span { flex: 1; }
   .discipline-select-block { display: grid; gap: 9px; }
@@ -116,6 +116,167 @@
 }
 
 @layer components {
+  .custom-select {
+    position: relative;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .custom-select-trigger {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    min-height: 48px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border: 1px solid var(--border, #e0e5dd);
+    border-radius: 11px;
+    background: var(--surface, #fff);
+    padding: 0 14px;
+    color: var(--ink, #23332e);
+    text-align: left;
+    transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+
+  .custom-select-trigger>span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .custom-select-trigger:hover:not(:disabled) {
+    border-color: var(--accent-border, #b6d2bc);
+    background: var(--surface-hover, #f8faf6);
+  }
+
+  .custom-select-trigger:focus-visible {
+    border-color: var(--accent-ui, #72ac8a);
+    box-shadow: 0 0 0 3px var(--accent-soft, #dbeadc);
+    outline: 0;
+  }
+
+  .custom-select-chevron {
+    flex: none;
+    color: var(--muted, #7f9186);
+    transition: transform .16s ease;
+  }
+
+  .custom-select.open .custom-select-chevron { transform: rotate(180deg); }
+  .custom-select.disabled { opacity: .6; }
+
+  .custom-select-menu {
+    position: absolute;
+    top: calc(100% + 7px);
+    right: 0;
+    left: 0;
+    z-index: 90;
+    display: grid;
+    max-height: 240px;
+    gap: 3px;
+    overflow-y: auto;
+    border: 1px solid var(--border, #e0e5dd);
+    border-radius: 12px;
+    background: var(--surface, #fff);
+    box-shadow: 0 16px 38px rgba(20, 50, 37, .16);
+    padding: 6px;
+    scrollbar-color: var(--accent-border, #b6d2bc) transparent;
+    scrollbar-width: thin;
+  }
+
+  .custom-select-option {
+    display: flex;
+    width: 100%;
+    min-height: 39px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    padding: 9px 11px;
+    color: var(--ink, #23332e);
+    font-size: 12px;
+    font-weight: 700;
+    text-align: left;
+  }
+
+  .custom-select-option>span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .custom-select-option:hover,
+  .custom-select-option.active {
+    background: var(--accent-soft, #edf5e9);
+    color: var(--accent-ui, #246d54);
+  }
+
+  .custom-select-option.selected {
+    color: var(--accent-ui, #246d54);
+    font-weight: 800;
+  }
+
+  .custom-select-option>svg { flex: none; }
+
+  .select-field.custom-select {
+    display: flex;
+    gap: 0;
+    padding: 0;
+  }
+
+  .select-field .custom-select-leading {
+    flex: none;
+    margin-left: 11px;
+  }
+
+  .select-field .custom-select-trigger {
+    min-height: 40px;
+    border: 0;
+    background: transparent;
+    padding: 0 10px;
+    color: #566d5b;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .select-field .custom-select-trigger:hover { background: transparent; }
+
+  .select-field.custom-select:focus-within {
+    border-color: var(--accent-ui, #72ac8a);
+    box-shadow: 0 0 0 3px var(--accent-soft, #dbeadc);
+  }
+
+  .select-field .custom-select-trigger:focus-visible {
+    border-color: transparent;
+    box-shadow: none;
+  }
+
+  .select-field .custom-select-menu {
+    width: max-content;
+    min-width: 100%;
+    max-width: min(360px, calc(100vw - 30px));
+  }
+
+  .content-filter-group .select-field:last-child .custom-select-menu {
+    right: 0;
+    left: auto;
+  }
+
+  .modal-select-field {
+    display: grid;
+    gap: 9px;
+  }
+
+  .modal-select-field>label {
+    color: #45584e;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
   .sidebar-top {
     padding-bottom: 30px;
   }

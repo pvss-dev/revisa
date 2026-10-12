@@ -189,6 +189,7 @@
   :root[data-theme='dark'] .interval-grid label,
   :root[data-theme='dark'] .interval-grid input,
   :root[data-theme='dark'] .select-field select,
+  :root[data-theme='dark'] .select-field .custom-select-trigger,
   :root[data-theme='dark'] .pomodoro-fields label,
   :root[data-theme='dark'] .pomodoro-fields input,
   :root[data-theme='dark'] .pomodoro-clock,
