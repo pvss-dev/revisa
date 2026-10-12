@@ -13,6 +13,10 @@ npm run dev
 
 O comando de desenvolvimento aplica as migrações Prisma antes de iniciar. Abra `http://localhost:3000`. Para conferir as regras e a compilação: `npm run check` e `npm run build`. Mudanças futuras no modelo ficam em `prisma/schema.prisma` e devem gerar uma nova migração com `npx prisma migrate dev --name nome_da_mudanca`.
 
+## Estilos
+
+O projeto usa Tailwind CSS 4 com o plugin PostCSS. As utilidades ficam nas classes JSX, e as cores compartilhadas estão em `@theme` no `app/globals.css`. Estilos específicos do aplicativo continuam no mesmo arquivo, na camada `components`. O Preflight do Tailwind não é importado para preservar os estilos de base já existentes durante a migração.
+
 ## Produção
 
 O arquivo `docker-compose.yml` é exclusivo da produção: sobe a aplicação e um PostgreSQL 18 dedicado no mesmo projeto, usa a rede existente do Nginx e não publica as portas 3000 ou 5432 na VPS. Os dados do banco ficam no volume nomeado `revisa_prisma_postgres_data`. A imagem da aplicação é publicada no GitHub Container Registry.
