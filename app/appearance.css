@@ -257,10 +257,10 @@
   .appearance-custom-form .button { height: 47px; }
   .appearance-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 2px; }
   .appearance-footer span { font-size: 12px; }
-  :root[data-theme='dark'] .discipline-form,
+  :root[data-theme='dark'] .discipline-color-preview,
   :root[data-theme='dark'] .discipline-empty { background: var(--surface-alt); border-color: var(--border); }
-  :root[data-theme='dark'] .discipline-form input { background: var(--surface); color: var(--ink); border-color: var(--border); }
-  :root[data-theme='dark'] .discipline-form label,
+  :root[data-theme='dark'] .modal-form .form-label-row label,
+  :root[data-theme='dark'] .discipline-color-preview b,
   :root[data-theme='dark'] .discipline-row b { color: var(--ink); }
   :root[data-theme='dark'] .discipline-row,
   :root[data-theme='dark'] .discipline-list { border-color: var(--border); }
