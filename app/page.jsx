@@ -67,7 +67,7 @@ export default function Home() {
   const [agendaFilter, setAgendaFilter] = useState('all');
   const [toast, setToast] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
-  const [sidebarHidden, setSidebarHidden] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const toastTimer = useRef(null);
 
   function notify(message) {
@@ -90,7 +90,11 @@ export default function Home() {
     return () => clearTimeout(toastTimer.current);
   }, []);
   useEffect(() => {
-    try { setSidebarHidden(window.localStorage.getItem('revisa-sidebar-hidden') === 'true'); } catch { /* armazenamento indisponível */ }
+    try {
+      const saved = window.localStorage.getItem('revisa-sidebar-collapsed');
+      const legacy = window.localStorage.getItem('revisa-sidebar-hidden');
+      setSidebarCollapsed(saved === null ? legacy === 'true' : saved === 'true');
+    } catch { /* armazenamento indisponível */ }
   }, []);
   useEffect(() => {
     const media = window.matchMedia('(prefers-color-scheme: dark)');
@@ -194,26 +198,29 @@ export default function Home() {
     } catch (failure) { setAppearance(previous); throw failure; }
   }
   function toggleSidebar() {
-    const hidden = !sidebarHidden;
-    setSidebarHidden(hidden);
-    try { window.localStorage.setItem('revisa-sidebar-hidden', String(hidden)); } catch { /* armazenamento indisponível */ }
+    const collapsed = !sidebarCollapsed;
+    setSidebarCollapsed(collapsed);
+    try {
+      window.localStorage.setItem('revisa-sidebar-collapsed', String(collapsed));
+      window.localStorage.removeItem('revisa-sidebar-hidden');
+    } catch { /* armazenamento indisponível */ }
   }
   function openAttempt(topic, stage) { setSelectedTopic(topic); setModal({ type: 'attempt', topic, stage }); }
   function openTopic(topic) { setSelectedTopic(topic); setView('topics'); }
   const greeting = new Date().getHours() < 12 ? 'Bom dia' : new Date().getHours() < 18 ? 'Boa tarde' : 'Boa noite';
 
-  return <div className={`app-shell flex min-h-screen ${sidebarHidden ? 'sidebar-hidden' : ''}`}>
+  return <div className={`app-shell flex min-h-screen ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
     <aside id="app-sidebar" className={`sidebar flex flex-none flex-col ${menuOpen ? 'open' : ''}`}>
-      <div className="sidebar-top"><div className="brand"><div className="brand-symbol"><BookOpen size={21}/></div><strong>revisa<span>.</span></strong></div><button className="icon-button mobile-close" onClick={() => setMenuOpen(false)} aria-label="Fechar menu"><X size={20}/></button></div>
+      <div className="sidebar-top"><div className="brand"><div className="brand-symbol"><BookOpen size={21}/></div><strong>revisa<span>.</span></strong></div><button className="icon-button sidebar-toggle sidebar-tooltip-target" onClick={toggleSidebar} aria-label={sidebarCollapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'} data-tooltip={sidebarCollapsed ? 'Expandir menu' : 'Recolher menu'} aria-expanded={!sidebarCollapsed} aria-controls="app-sidebar">{sidebarCollapsed ? <PanelLeftOpen size={21}/> : <PanelLeftClose size={21}/>}</button><button className="icon-button mobile-close" onClick={() => setMenuOpen(false)} aria-label="Fechar menu"><X size={20}/></button></div>
       <div className="sidebar-caption">ESPAÇO DE ESTUDO</div>
-      <nav className="nav-list grid gap-1.5" aria-label="Navegação principal">{navItems.map(item => <button key={item.key} className={`nav-item ${view === item.key ? 'active' : ''}`} onClick={() => chooseView(item.key)}><item.icon size={19}/><span>{item.label}</span>{item.key === 'agenda' && overdue > 0 && <i>{overdue}</i>}</button>)}</nav>
+      <nav className="nav-list grid gap-1.5" aria-label="Navegação principal">{navItems.map(item => <button key={item.key} className={`nav-item sidebar-tooltip-target ${view === item.key ? 'active' : ''}`} data-tooltip={item.label} aria-label={item.label} aria-current={view === item.key ? 'page' : undefined} onClick={() => chooseView(item.key)}><item.icon size={19}/><span className="nav-label">{item.label}</span>{item.key === 'agenda' && overdue > 0 && <i aria-label={`${overdue} revisões em atraso`}>{overdue}</i>}</button>)}</nav>
       <div className="sidebar-spacer flex-1"/>
       <div className="sidebar-tip"><div className="tip-spark"><Sparkles size={18}/></div><b>Um passo de cada vez.</b><p>Pequenas revisões frequentes fazem a diferença.</p></div>
-      <div className="sidebar-profile flex items-center gap-2.5"><button className="profile-link" onClick={() => chooseView('profile')} aria-label="Abrir meu perfil"><span className="avatar">{initials(user.name)}</span><span className="profile-copy"><b>{user.name}</b><small>{user.email}</small></span></button><button className="logout-button" title="Sair" aria-label="Sair" onClick={logout}><LogOut size={18}/></button></div>
+      <div className="sidebar-profile flex items-center gap-2.5"><button className="profile-link sidebar-tooltip-target" data-tooltip="Meu perfil" onClick={() => chooseView('profile')} aria-label="Abrir meu perfil"><span className="avatar">{initials(user.name)}</span><span className="profile-copy"><b>{user.name}</b><small>{user.email}</small></span></button><button className="logout-button sidebar-tooltip-target" data-tooltip="Sair" aria-label="Sair" onClick={logout}><LogOut size={18}/></button></div>
     </aside>
     {menuOpen && <button className="mobile-overlay" onClick={() => setMenuOpen(false)} aria-label="Fechar menu"/>}
     <main className="main-area min-w-0 flex-1">
-      <header className="topbar flex items-center justify-between"><div className="topbar-start flex min-w-0 items-center gap-4"><button className="icon-button sidebar-toggle" onClick={toggleSidebar} aria-label={sidebarHidden ? 'Mostrar menu lateral' : 'Esconder menu lateral'} title={sidebarHidden ? 'Mostrar menu lateral' : 'Esconder menu lateral'} aria-expanded={!sidebarHidden} aria-controls="app-sidebar">{sidebarHidden ? <PanelLeftOpen size={21}/> : <PanelLeftClose size={21}/>}</button><button className="icon-button menu-button" onClick={() => setMenuOpen(true)} aria-label="Abrir menu" aria-expanded={menuOpen} aria-controls="app-sidebar"><Menu size={21}/></button><div className="breadcrumb">Meu espaço <ChevronRight size={14}/> <strong>{navItems.find(n => n.key === view)?.label}</strong></div></div><div className="topbar-right flex items-center gap-[22px]"><div className="today-chip"><CalendarDays size={16}/>{formatDate(today, { weekday: 'long', day: 'numeric', month: 'long' })}</div><button className="top-avatar" onClick={() => chooseView('profile')} title="Meu perfil" aria-label="Abrir meu perfil">{initials(user.name)}</button></div></header>
+      <header className="topbar flex items-center justify-between"><div className="topbar-start flex min-w-0 items-center gap-4"><button className="icon-button menu-button" onClick={() => setMenuOpen(true)} aria-label="Abrir menu" aria-expanded={menuOpen} aria-controls="app-sidebar"><Menu size={21}/></button><div className="breadcrumb">Meu espaço <ChevronRight size={14}/> <strong>{navItems.find(n => n.key === view)?.label}</strong></div></div><div className="topbar-right flex items-center gap-[22px]"><div className="today-chip"><CalendarDays size={16}/>{formatDate(today, { weekday: 'long', day: 'numeric', month: 'long' })}</div><button className="top-avatar" onClick={() => chooseView('profile')} title="Meu perfil" aria-label="Abrir meu perfil">{initials(user.name)}</button></div></header>
       <div className="page-content mx-auto">
         {view === 'overview' && <>
           <div className="page-heading overview-heading"><div><div className="eyebrow"><span className="eyebrow-dot"/> SEU PAINEL DE ESTUDOS</div><h1>{greeting}, {user.name.split(' ')[0]} <span className="wave">✳</span></h1><p>Veja o que precisa da sua atenção e siga no seu ritmo.</p></div><button className="button primary" onClick={() => setModal({ type: 'topic' })}><Plus size={18}/> Novo assunto</button></div>
