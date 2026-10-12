@@ -11,6 +11,15 @@ export async function PATCH(request, { params }) {
   const body = await bodyJson(request);
   const topic = body && validTopic(body);
   if (!id || !topic) return error('Dados inválidos.');
+  const existing = await prisma.topic.findFirst({
+    where: { id, userId: auth.user.id },
+    select: { id: true, attempts: { select: { stage: true } } },
+  });
+  if (!existing) return error('Assunto não encontrado.', 404);
+  const newStageCount = (topic.reviewOffsets ?? auth.user.reviewOffsets).length;
+  if (existing.attempts.some(attempt => attempt.stage > newStageCount)) {
+    return error('Não é possível remover uma revisão que já tem resultados registrados.', 409);
+  }
   const result = await prisma.topic.updateMany({
     where: { id, userId: auth.user.id },
     data: { subject: topic.subject, title: topic.title, lessonDate: dateValue(topic.lessonDate),

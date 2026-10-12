@@ -14,10 +14,12 @@ test('datas e dados do assunto rejeitam valores inválidos', () => {
   assert.equal(validTopic({ subject: 'Direito', title: 'Princípios', practiceDate: '2026-02-30', priority: 'Alta' }), null);
 });
 
-test('intervalos personalizados exigem quatro dias crescentes', () => {
+test('intervalos personalizados aceitam de quatro a vinte dias crescentes', () => {
   assert.deepEqual(validReviewOffsets(['3','10','30','90']), [3,10,30,90]);
+  assert.deepEqual(validReviewOffsets(['3','10','30','90','180','365']), [3,10,30,90,180,365]);
   assert.equal(validReviewOffsets([3,10,10,90]), null);
   assert.equal(validReviewOffsets([3,10,30]), null);
+  assert.equal(validReviewOffsets(Array.from({length:21}, (_,i) => i+1)), null);
   assert.equal(validReviewOffsets([true,10,30,90]), null);
   assert.deepEqual(validTopic({ subject:'Direito',title:'Princípios',practiceDate:'2026-03-10',reviewOffsets:[3,10,30,90] })?.reviewOffsets, [3,10,30,90]);
   assert.equal(validTopic({ subject:'Direito',title:'Princípios',practiceDate:'2026-03-10',reviewOffsets:[10,3,30,90] }), null);
