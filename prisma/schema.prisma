@@ -7,19 +7,22 @@ datasource db {
 }
 
 model User {
-  id            Int             @id @default(autoincrement())
-  name          String
-  email         String          @unique
-  passwordHash  String          @map("password_hash")
-  reviewOffsets Int[]           @default([7, 21, 60, 100]) @map("review_offsets")
-  appearanceTheme String        @default("light") @map("appearance_theme")
-  accentColor     String        @default("#246D54") @map("accent_color")
-  createdAt     DateTime        @default(now()) @map("created_at")
-  sessions      Session[]
-  disciplines   Discipline[]
-  topics        Topic[]
-  attempts      ReviewAttempt[]
-  exams         Exam[]
+  id                       Int                       @id @default(autoincrement())
+  name                     String
+  email                    String                    @unique
+  passwordHash             String                    @map("password_hash")
+  reviewOffsets            Int[]                     @default([7, 21, 60, 100]) @map("review_offsets")
+  appearanceTheme          String                    @default("light") @map("appearance_theme")
+  accentColor              String                    @default("#246D54") @map("accent_color")
+  createdAt                DateTime                  @default(now()) @map("created_at")
+  sessions                 Session[]
+  disciplines              Discipline[]
+  topics                   Topic[]
+  attempts                 ReviewAttempt[]
+  exams                    Exam[]
+  googleCalendarConnection GoogleCalendarConnection?
+  googleCalendarEvents     GoogleCalendarEvent[]
+  calendarSyncJobs         CalendarSyncJob[]
 
   @@map("users")
 }
@@ -40,7 +43,7 @@ model Discipline {
 }
 
 model Session {
-  tokenHash String   @id @db.Char(64) @map("token_hash")
+  tokenHash String   @id @map("token_hash") @db.Char(64)
   userId    Int      @map("user_id")
   expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
@@ -51,25 +54,81 @@ model Session {
 }
 
 model Topic {
-  id            Int             @id @default(autoincrement())
-  userId        Int             @map("user_id")
-  disciplineId  Int             @map("discipline_id")
-  title         String
-  lessonDate    DateTime?       @db.Date @map("lesson_date")
-  practiceDate  DateTime        @db.Date @map("practice_date")
-  priority      String
-  sourceKey     String?         @map("source_key")
-  reviewOffsets Int[]           @default([]) @map("review_offsets")
-  createdAt     DateTime        @default(now()) @map("created_at")
-  updatedAt     DateTime        @updatedAt @map("updated_at")
-  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  discipline    Discipline      @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
-  attempts      ReviewAttempt[]
+  id                   Int                   @id @default(autoincrement())
+  userId               Int                   @map("user_id")
+  disciplineId         Int                   @map("discipline_id")
+  title                String
+  lessonDate           DateTime?             @map("lesson_date") @db.Date
+  practiceDate         DateTime              @map("practice_date") @db.Date
+  priority             String
+  sourceKey            String?               @map("source_key")
+  reviewOffsets        Int[]                 @default([]) @map("review_offsets")
+  createdAt            DateTime              @default(now()) @map("created_at")
+  updatedAt            DateTime              @updatedAt @map("updated_at")
+  user                 User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  discipline           Discipline            @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
+  attempts             ReviewAttempt[]
+  googleCalendarEvents GoogleCalendarEvent[]
 
   @@unique([userId, sourceKey])
   @@index([userId, practiceDate], map: "topics_user_practice_idx")
   @@index([disciplineId], map: "topics_discipline_idx")
   @@map("topics")
+}
+
+model GoogleCalendarConnection {
+  id                   Int       @id @default(autoincrement())
+  userId               Int       @unique @map("user_id")
+  googleEmail          String?   @map("google_email")
+  calendarId           String    @default("primary") @map("calendar_id")
+  accessToken          String    @map("access_token") @db.Text
+  refreshToken         String    @map("refresh_token") @db.Text
+  accessTokenExpiresAt DateTime? @map("access_token_expires_at")
+  scope                String?
+  lastSyncAt           DateTime? @map("last_sync_at")
+  lastSyncError        String?   @map("last_sync_error") @db.Text
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("google_calendar_connections")
+}
+
+model GoogleCalendarEvent {
+  id            Int      @id @default(autoincrement())
+  userId        Int      @map("user_id")
+  topicId       Int      @map("topic_id")
+  stage         Int      @db.SmallInt
+  eventId       String   @map("event_id")
+  scheduledDate DateTime @map("scheduled_date") @db.Date
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topic         Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@unique([topicId, stage])
+  @@unique([userId, eventId])
+  @@index([userId], map: "google_calendar_events_user_idx")
+  @@map("google_calendar_events")
+}
+
+model CalendarSyncJob {
+  id            Int      @id @default(autoincrement())
+  userId        Int      @map("user_id")
+  operation     String
+  topicId       Int?     @map("topic_id")
+  dedupeKey     String?  @unique @map("dedupe_key")
+  payload       Json?
+  status        String   @default("pending")
+  attempts      Int      @default(0)
+  nextAttemptAt DateTime @default(now()) @map("next_attempt_at")
+  lastError     String?  @map("last_error") @db.Text
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status, nextAttemptAt], map: "calendar_sync_jobs_pending_idx")
+  @@map("calendar_sync_jobs")
 }
 
 model ReviewAttempt {
@@ -79,7 +138,7 @@ model ReviewAttempt {
   stage       Int       @db.SmallInt
   total       Int
   correct     Int
-  completedAt DateTime? @db.Date @map("completed_at")
+  completedAt DateTime? @map("completed_at") @db.Date
   imported    Boolean   @default(false)
   createdAt   DateTime  @default(now()) @map("created_at")
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -94,7 +153,7 @@ model Exam {
   id            Int          @id @default(autoincrement())
   userId        Int          @map("user_id")
   title         String
-  examDate      DateTime?    @db.Date @map("exam_date")
+  examDate      DateTime?    @map("exam_date") @db.Date
   questionCount Int          @map("question_count")
   createdAt     DateTime     @default(now()) @map("created_at")
   user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)

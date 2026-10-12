@@ -9,7 +9,8 @@
     "build": "next build",
     "start": "prisma migrate deploy && next start --hostname 0.0.0.0",
     "db:migrate": "prisma migrate deploy",
-    "check": "node --test tests/*.test.mjs"
+    "check": "node --test tests/*.test.mjs",
+    "precheck": "prisma generate"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",

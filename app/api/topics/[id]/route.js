@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db';
 import { dateValue } from '@/lib/dates';
 import { authenticated, bodyJson, error, integerId, safeMutation } from '@/lib/http';
 import { validTopic } from '@/lib/validation';
+import { captureAndEnqueueEventDeletion, enqueueTopicSync, processCapturedDeletion } from '@/lib/google-calendar';
 
 export async function PATCH(request, { params }) {
   if (!safeMutation(request)) return error('Origem inválida.', 403);
@@ -39,7 +40,9 @@ export async function PATCH(request, { params }) {
       updatedAt: new Date(),
     },
   });
-  return result.count ? Response.json({ ok: true }) : error('Assunto não encontrado.', 404);
+  if (!result.count) return error('Assunto não encontrado.', 404);
+  const calendarSync = await enqueueTopicSync(auth.user.id, id);
+  return Response.json({ ok: true, calendarSync });
 }
 
 export async function DELETE(request, { params }) {
@@ -48,6 +51,9 @@ export async function DELETE(request, { params }) {
   if (auth.response) return auth.response;
   const id = integerId((await params).id);
   if (!id) return error('Assunto inválido.');
+  const deletion = await captureAndEnqueueEventDeletion(auth.user.id, [id]);
   const result = await prisma.topic.deleteMany({ where: { id, userId: auth.user.id } });
-  return result.count ? Response.json({ ok: true }) : error('Assunto não encontrado.', 404);
+  if (!result.count) return error('Assunto não encontrado.', 404);
+  const calendarSync = await processCapturedDeletion(deletion);
+  return Response.json({ ok: true, calendarSync });
 }

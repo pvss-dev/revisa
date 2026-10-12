@@ -61,13 +61,17 @@ jobs:
           APP_DIR: ${{ vars.VPS_APP_DIR }}
           IMAGE_REPO: ${{ github.repository }}
           PROXY_NETWORK: ${{ vars.PROXY_NETWORK || 'nginx_local-net' }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_TOKEN_ENCRYPTION_KEY: ${{ secrets.GOOGLE_TOKEN_ENCRYPTION_KEY }}
+          GOOGLE_REDIRECT_URI: ${{ vars.GOOGLE_REDIRECT_URI }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ vars.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
           fingerprint: ${{ secrets.VPS_SSH_FINGERPRINT }}
-          envs: APP_DIR,IMAGE_REPO,PROXY_NETWORK
+          envs: APP_DIR,IMAGE_REPO,PROXY_NETWORK,GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,GOOGLE_TOKEN_ENCRYPTION_KEY,GOOGLE_REDIRECT_URI
           script_path: deploy/prepare-remote.sh
 
       - name: Copy the Compose file to the VPS

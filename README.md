@@ -23,6 +23,18 @@ O arquivo `docker-compose.yml` é exclusivo da produção: sobe a aplicação e 
 
 O passo a passo adaptado à VPS e ao Nginx fornecidos está em [deploy/PRODUCAO.md](deploy/PRODUCAO.md). O GitHub Actions executa CI, publica a imagem e faz o deploy por SSH. O Prisma aplica as migrações na inicialização e a aplicação oferece `/api/health` para verificação. O primeiro deploy com Prisma usa o novo volume `revisa_prisma_postgres_data`, começando com um banco vazio conforme autorizado.
 
+## Google Calendar
+
+A integração usa OAuth 2.0 no servidor e a API oficial do Google Calendar. Cada etapa de revisão recebe um identificador determinístico e também é mapeada no PostgreSQL, evitando eventos duplicados mesmo após uma nova tentativa. Operações que falham ficam em uma fila persistente e podem ser repetidas em **Meu perfil → Google Calendar**.
+
+No Google Cloud Console, habilite a **Google Calendar API**, configure a tela de consentimento e crie um cliente OAuth do tipo **Aplicativo da Web**. Cadastre exatamente esta URI de redirecionamento:
+
+```text
+https://revisa.pvss.dev.br/api/integrations/google/callback
+```
+
+No ambiente `production` do repositório, adicione os secrets `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` e `GOOGLE_TOKEN_ENCRYPTION_KEY`. Gere a chave de criptografia uma única vez com `openssl rand -base64 32`. Adicione também a variable `GOOGLE_REDIRECT_URI` com a URI acima. O workflow grava e preserva esses valores no `.env.production` da VPS.
+
 ## Regras da planilha
 
 - A aba **CONCURSOS** importa disciplina, assunto, datas, prioridade e resultados concluídos de `Q0` a `Q4`.

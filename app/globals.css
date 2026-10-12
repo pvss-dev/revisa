@@ -10,6 +10,55 @@
 }
 
 @layer components {
+  .google-calendar-panel { grid-column: 1 / -1; }
+  .google-calendar-content { display: grid; gap: 18px; padding: 28px; }
+  .integration-loading,
+  .integration-state { display: flex; align-items: flex-start; gap: 12px; color: var(--muted); }
+  .integration-loading { align-items: center; min-height: 44px; font-size: 12px; }
+  .integration-state > svg { flex: none; margin-top: 1px; color: var(--accent); }
+  .integration-state > div { display: grid; gap: 5px; min-width: 0; }
+  .integration-state b { color: var(--ink); font-size: 13px; }
+  .integration-state span { color: var(--muted); font-size: 11px; line-height: 1.55; overflow-wrap: anywhere; }
+  .integration-state.success > svg { color: #4b956b; }
+  .integration-state.warning,
+  .integration-state.error { padding: 13px 14px; border: 1px solid #eadfbe; border-radius: 10px; background: #fff9e9; }
+  .integration-state.warning > svg { color: #b48734; }
+  .integration-state.error { border-color: #efd2cb; background: #fff2ef; }
+  .integration-state.error > svg,
+  .integration-state.error b { color: #b85c4d; }
+  :root[data-theme='dark'] .integration-state.warning {
+    border-color: color-mix(in srgb, #b48734 42%, var(--border));
+    background: color-mix(in srgb, #b48734 12%, var(--surface));
+  }
+  :root[data-theme='dark'] .integration-state.error {
+    border-color: color-mix(in srgb, #b85c4d 42%, var(--border));
+    background: color-mix(in srgb, #b85c4d 12%, var(--surface));
+  }
+  .integration-connect,
+  .integration-account { display: flex; align-items: center; justify-content: space-between; gap: 22px; }
+  .integration-connect .integration-state { flex: 1; }
+  .integration-account { padding-bottom: 18px; border-bottom: 1px solid var(--line); }
+  .integration-account dl { display: flex; gap: 28px; margin: 0; }
+  .integration-account dl div { display: grid; gap: 4px; }
+  .integration-account dt { color: var(--muted); font-size: 10px; font-weight: 700; }
+  .integration-account dd { margin: 0; color: var(--ink); font-size: 12px; font-weight: 800; }
+  .integration-actions { display: flex; justify-content: flex-end; gap: 10px; }
+  .button.danger { color: #ad5b4d; border-color: #efd5cf; }
+  .spinning { animation: integration-spin .85s linear infinite; }
+  @keyframes integration-spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 680px) {
+    .google-calendar-content { padding: 21px; }
+    .integration-connect,
+    .integration-account { align-items: stretch; flex-direction: column; }
+    .integration-connect .button { width: 100%; }
+    .integration-account dl { width: 100%; justify-content: space-between; gap: 14px; }
+    .integration-actions { flex-direction: column-reverse; }
+    .integration-actions .button { width: 100%; }
+  }
+}
+
+@layer components {
   .content-list-toolbar { align-items: stretch; }
   .content-list-toolbar .search-field { flex: 1 1 260px; width: auto; max-width: 430px; }
   .content-filter-group { display: flex; justify-content: flex-end; gap: 8px; flex: 1 1 auto; }

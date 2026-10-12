@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db';
 import { dateValue } from '@/lib/dates';
 import { authenticated, bodyJson, error, integerId, safeMutation } from '@/lib/http';
 import { dateString } from '@/lib/validation';
+import { enqueueTopicSync } from '@/lib/google-calendar';
 
 export async function PUT(request, { params }) {
   if (!safeMutation(request)) return error('Origem inválida.', 403);
@@ -26,7 +27,8 @@ export async function PUT(request, { params }) {
     create: { userId: auth.user.id, topicId: id, stage, total, correct, completedAt: dateValue(completedAt), imported: false },
     update: { total, correct, completedAt: dateValue(completedAt), imported: false },
   });
-  return Response.json({ ok: true });
+  const calendarSync = await enqueueTopicSync(auth.user.id, id);
+  return Response.json({ ok: true, calendarSync });
 }
 
 export async function DELETE(request, { params }) {
@@ -41,5 +43,6 @@ export async function DELETE(request, { params }) {
   if (!own) return error('Assunto não encontrado.', 404);
   if (stage > (own.reviewOffsets.length || auth.user.reviewOffsets.length)) return error('Revisão inválida.');
   await prisma.reviewAttempt.deleteMany({ where: { topicId: id, userId: auth.user.id, stage } });
-  return Response.json({ ok: true });
+  const calendarSync = await enqueueTopicSync(auth.user.id, id);
+  return Response.json({ ok: true, calendarSync });
 }

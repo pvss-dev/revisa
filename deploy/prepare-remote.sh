@@ -15,6 +15,10 @@ esac
 
 mkdir -p "$APP_DIR"
 env_file="$APP_DIR/.env.production"
+stored_google_client_id=''
+stored_google_client_secret=''
+stored_google_token_key=''
+stored_google_redirect_uri=''
 
 if [ -f "$env_file" ]; then
   stored_password=''
@@ -22,6 +26,10 @@ if [ -f "$env_file" ]; then
     if [ "$name" = POSTGRES_PASSWORD ]; then
       stored_password=$value
     fi
+    if [ "$name" = GOOGLE_CLIENT_ID ]; then stored_google_client_id=$value; fi
+    if [ "$name" = GOOGLE_CLIENT_SECRET ]; then stored_google_client_secret=$value; fi
+    if [ "$name" = GOOGLE_TOKEN_ENCRYPTION_KEY ]; then stored_google_token_key=$value; fi
+    if [ "$name" = GOOGLE_REDIRECT_URI ]; then stored_google_redirect_uri=$value; fi
   done < "$env_file"
   case "$stored_password" in
     *[!0-9a-fA-F]*|'') echo 'Invalid POSTGRES_PASSWORD in the existing .env.production.' >&2; exit 1 ;;
@@ -40,12 +48,17 @@ else
   postgres_password=$(openssl rand -hex 32)
 fi
 
+google_client_id=${GOOGLE_CLIENT_ID:-$stored_google_client_id}
+google_client_secret=${GOOGLE_CLIENT_SECRET:-$stored_google_client_secret}
+google_token_key=${GOOGLE_TOKEN_ENCRYPTION_KEY:-$stored_google_token_key}
+google_redirect_uri=${GOOGLE_REDIRECT_URI:-$stored_google_redirect_uri}
+
 repository=$(printf '%s' "$IMAGE_REPO" | tr '[:upper:]' '[:lower:]')
 umask 077
 temporary_file=$(mktemp "$APP_DIR/.env.production.tmp.XXXXXX")
 trap 'rm -f "$temporary_file"' EXIT
-printf 'PROXY_NETWORK=%s\nPOSTGRES_PASSWORD=%s\nREVISA_IMAGE=ghcr.io/%s:latest\n' \
-  "$PROXY_NETWORK" "$postgres_password" "$repository" > "$temporary_file"
+printf 'PROXY_NETWORK=%s\nPOSTGRES_PASSWORD=%s\nREVISA_IMAGE=ghcr.io/%s:latest\nGOOGLE_CLIENT_ID=%s\nGOOGLE_CLIENT_SECRET=%s\nGOOGLE_TOKEN_ENCRYPTION_KEY=%s\nGOOGLE_REDIRECT_URI=%s\n' \
+  "$PROXY_NETWORK" "$postgres_password" "$repository" "$google_client_id" "$google_client_secret" "$google_token_key" "$google_redirect_uri" > "$temporary_file"
 mv "$temporary_file" "$env_file"
 trap - EXIT
 

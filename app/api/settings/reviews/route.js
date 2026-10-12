@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/db';
+import { after } from 'next/server';
 import { authenticated, bodyJson, error, safeMutation } from '@/lib/http';
 import { validReviewOffsets } from '@/lib/validation';
+import { processCalendarJob, queueFullSync } from '@/lib/google-calendar';
 
 export async function PATCH(request) {
   if (!safeMutation(request)) return error('Origem inválida.', 403);
@@ -17,5 +19,7 @@ export async function PATCH(request) {
     if (recorded) return error('Não é possível remover uma revisão que já tem resultados registrados.', 409);
   }
   await prisma.user.update({ where: { id: auth.user.id }, data: { reviewOffsets } });
-  return Response.json({ reviewOffsets });
+  const calendarSync = await queueFullSync(auth.user.id);
+  if (calendarSync.jobId) after(() => processCalendarJob(calendarSync.jobId));
+  return Response.json({ reviewOffsets, calendarSync });
 }

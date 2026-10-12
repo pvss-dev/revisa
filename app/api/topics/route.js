@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db';
 import { dateOnly, dateValue } from '@/lib/dates';
 import { authenticated, bodyJson, error, safeMutation } from '@/lib/http';
 import { validTopic } from '@/lib/validation';
+import { enqueueTopicSync } from '@/lib/google-calendar';
 
 function publicTopic(topic) {
   return {
@@ -61,5 +62,6 @@ export async function POST(request) {
     priority: topic.priority,
     reviewOffsets: topic.reviewOffsets ?? [],
   } });
-  return Response.json({ id: created.id }, { status: 201 });
+  const calendarSync = await enqueueTopicSync(auth.user.id, created.id);
+  return Response.json({ id: created.id, calendarSync }, { status: 201 });
 }
