@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { decryptGoogleToken, encryptGoogleToken, googleApplicationOrigin, googleEventId, pendingReviewStages, reviewEventResource } from '../lib/google-calendar.js';
+import { decryptGoogleToken, encryptGoogleToken, googleApplicationOrigin, googleEventId, normalizeGoogleCalendarEvent, pendingReviewStages, reviewEventResource } from '../lib/google-calendar.js';
 
 process.env.GOOGLE_CLIENT_ID = 'test-client';
 process.env.GOOGLE_CLIENT_SECRET = 'test-secret';
@@ -53,4 +53,25 @@ test('completed review stages are removed from the Google Calendar plan', () => 
     attempts: [{ stage: 0 }, { stage: 2 }],
   };
   assert.deepEqual(pendingReviewStages(topic, [7, 21, 60, 100]), [1, 3, 4]);
+});
+
+test('Google Calendar events expose only the data needed by the agenda', () => {
+  assert.deepEqual(normalizeGoogleCalendarEvent({
+    id: 'google-event',
+    summary: 'Consulta',
+    status: 'confirmed',
+    start: { dateTime: '2026-10-14T09:30:00-04:00' },
+    end: { dateTime: '2026-10-14T10:00:00-04:00' },
+    htmlLink: 'https://www.google.com/calendar/event?eid=abc',
+    extendedProperties: { private: { revisaTopicId: '42', secret: 'not-returned' } },
+  }), {
+    id: 'google-event',
+    title: 'Consulta',
+    start: '2026-10-14T09:30:00-04:00',
+    end: '2026-10-14T10:00:00-04:00',
+    allDay: false,
+    link: 'https://www.google.com/calendar/event?eid=abc',
+    managedByRevisa: true,
+  });
+  assert.equal(normalizeGoogleCalendarEvent({ id: 'cancelled', status: 'cancelled', start: { date: '2026-10-14' } }), null);
 });

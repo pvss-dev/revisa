@@ -13,6 +13,7 @@ import { appRoutes, viewForPath } from '@/lib/navigation';
 import AppearanceSettings from './AppearanceSettings';
 import PomodoroTimer from './PomodoroTimer';
 import GoogleCalendarSettings from './GoogleCalendarSettings';
+import AgendaCalendar from './AgendaCalendar';
 
 const stageName = stage => stage === 0 ? 'Questões iniciais' : `Revisão ${stage}`;
 const stageShort = stage => stage === 0 ? 'Q0' : `R${stage}`;
@@ -229,6 +230,7 @@ export default function RevisaApp({ initialView = 'overview' }) {
   const [topicFilter, setTopicFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('Todas');
   const [agendaFilter, setAgendaFilter] = useState('all');
+  const [agendaSelectedDate, setAgendaSelectedDate] = useState('');
   const [toast, setToast] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -250,7 +252,9 @@ export default function RevisaApp({ initialView = 'overview' }) {
     finally { setLoading(false); }
   }
   useEffect(() => {
-    setToday(todayLocal());
+    const currentDate = todayLocal();
+    setToday(currentDate);
+    setAgendaSelectedDate(currentDate);
     api('/api/me').then(d => { setUser(d.user); setAppearance(appearanceFromUser(d.user)); if (d.user) refresh(); }).catch(() => setUser(null));
     return () => clearTimeout(toastTimer.current);
   }, []);
@@ -436,8 +440,8 @@ export default function RevisaApp({ initialView = 'overview' }) {
         </>}
         {view === 'agenda' && <>
           <div className="page-heading"><div><div className="eyebrow"><span className="eyebrow-dot"/> SEU CRONOGRAMA</div><h1>Agenda de revisões</h1><p>O planejamento é calculado a partir da data das primeiras questões.</p></div><div className="heading-actions"><button className="button secondary" onClick={() => chooseView('settings')}><Settings2 size={17}/> Ajustar intervalos</button><button className="button primary" onClick={() => setModal({ type: 'topic' })}><Plus size={18}/> Novo assunto</button></div></div>
-          <div className="calendar-strip">{Array.from({ length: 7 }, (_,i) => { const date=addDays(today,i); const count=pending.filter(x=>x.date===date).length; return <button key={date} className={`calendar-day ${i===0?'selected':''}`} onClick={() => setAgendaFilter(date)}><span>{formatDate(date,{weekday:'short'})}</span><b>{formatDate(date,{day:'2-digit'})}</b><small>{count ? `${count} ${count===1?'revisão':'revisões'}` : 'livre'}</small></button>; })}</div>
-          <div className="agenda-toolbar"><div className="segmented">{[['all','Todas'],['overdue','Atrasadas'],['today','Hoje'],['upcoming','Próximas'],['done','Concluídas']].map(([key,label])=><button key={key} className={agendaFilter===key?'active':''} onClick={()=>setAgendaFilter(key)}>{label}</button>)}</div><span>{pending.length} pendentes</span></div>
+          <AgendaCalendar localEvents={pending} selectedDate={agendaSelectedDate} today={today} onSelectDate={date=>{setAgendaSelectedDate(date);setAgendaFilter(date);}}/>
+          <div className="agenda-toolbar"><div className="segmented">{[['all','Todas'],['overdue','Atrasadas'],['today','Hoje'],['upcoming','Próximas'],['done','Concluídas']].map(([key,label])=><button key={key} className={agendaFilter===key?'active':''} onClick={()=>{setAgendaFilter(key);setAgendaSelectedDate(key==='today'?today:key==='all'?today:'');}}>{label}</button>)}</div><span>{pending.length} pendentes</span></div>
           <section className="panel agenda-full">{(() => { const list = events.filter(x => agendaFilter==='done' ? !!x.attempt : !x.attempt && (agendaFilter==='all' || (agendaFilter==='overdue' && x.date<today) || (agendaFilter==='today' && x.date===today) || (agendaFilter==='upcoming' && x.date>today) || x.date===agendaFilter)); return list.length ? <div className="event-list">{list.map(x=><EventRow key={`${x.topic.id}-${x.stage}`} event={x} today={today} onOpen={()=>openAttempt(x.topic,x.stage)} onTopic={()=>openTopic(x.topic)}/>)}</div> : <Empty icon={CalendarDays} title="Nenhuma revisão nesta seleção" text="Escolha outro período ou adicione um assunto novo."/>; })()}</section>
         </>}
         {view === 'topics' && <>
