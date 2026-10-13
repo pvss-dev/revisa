@@ -71,6 +71,8 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
           fingerprint: ${{ secrets.VPS_SSH_FINGERPRINT }}
+          timeout: 60s
+          command_timeout: 2m
           envs: APP_DIR,IMAGE_REPO,PROXY_NETWORK,GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,GOOGLE_TOKEN_ENCRYPTION_KEY,GOOGLE_REDIRECT_URI
           script_path: deploy/prepare-remote.sh
 
@@ -82,6 +84,7 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
           fingerprint: ${{ secrets.VPS_SSH_FINGERPRINT }}
+          timeout: 60s
           source: docker-compose.yml
           target: ${{ vars.VPS_APP_DIR }}
           overwrite: true
@@ -101,6 +104,7 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
           fingerprint: ${{ secrets.VPS_SSH_FINGERPRINT }}
+          timeout: 60s
           command_timeout: 10m
           envs: APP_DIR,IMAGE_REPO,IMAGE_TAG,RESTART,GHCR_USER,GHCR_TOKEN
           script_path: deploy/deploy-remote.sh
