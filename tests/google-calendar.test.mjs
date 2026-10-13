@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { decryptGoogleToken, encryptGoogleToken, googleApplicationOrigin, googleEventId, reviewEventResource } from '../lib/google-calendar.js';
+import { decryptGoogleToken, encryptGoogleToken, googleApplicationOrigin, googleEventId, pendingReviewStages, reviewEventResource } from '../lib/google-calendar.js';
 
 process.env.GOOGLE_CLIENT_ID = 'test-client';
 process.env.GOOGLE_CLIENT_SECRET = 'test-secret';
@@ -38,5 +38,19 @@ test('review events use exclusive end dates and the configured offsets', () => {
   assert.equal(event.date, '2026-11-02');
   assert.deepEqual(event.resource.start, { date: '2026-11-02' });
   assert.deepEqual(event.resource.end, { date: '2026-11-03' });
+  assert.equal(event.resource.description, [
+    'Disciplina: Português',
+    'Prioridade: Média',
+    '',
+    'Evento sincronizado automaticamente pelo Revisa.',
+  ].join('\n'));
   assert.equal(event.resource.extendedProperties.private.revisaStage, '2');
+});
+
+test('completed review stages are removed from the Google Calendar plan', () => {
+  const topic = {
+    reviewOffsets: [],
+    attempts: [{ stage: 0 }, { stage: 2 }],
+  };
+  assert.deepEqual(pendingReviewStages(topic, [7, 21, 60, 100]), [1, 3, 4]);
 });
