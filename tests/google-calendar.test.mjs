@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { decryptGoogleToken, encryptGoogleToken, googleApplicationOrigin, googleEventId, normalizeGoogleCalendarEvent, pendingReviewStages, reviewEventResource } from '../lib/google-calendar.js';
+import { decryptGoogleToken, encryptGoogleToken, googleApplicationOrigin, googleEventId, hasGoogleCalendarListScope, normalizeGoogleCalendarEvent, pendingReviewStages, reviewEventResource } from '../lib/google-calendar.js';
 
 process.env.GOOGLE_CLIENT_ID = 'test-client';
 process.env.GOOGLE_CLIENT_SECRET = 'test-secret';
@@ -74,4 +74,9 @@ test('Google Calendar events expose only the data needed by the agenda', () => {
     managedByRevisa: true,
   });
   assert.equal(normalizeGoogleCalendarEvent({ id: 'cancelled', status: 'cancelled', start: { date: '2026-10-14' } }), null);
+});
+
+test('detects whether the account authorized access to its calendar list', () => {
+  assert.equal(hasGoogleCalendarListScope('openid email https://www.googleapis.com/auth/calendar.events'), false);
+  assert.equal(hasGoogleCalendarListScope('openid https://www.googleapis.com/auth/calendar.calendarlist.readonly email'), true);
 });

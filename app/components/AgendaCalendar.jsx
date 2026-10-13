@@ -47,7 +47,7 @@ function localEventTitle(event) {
 export default function AgendaCalendar({ localEvents, selectedDate, today, onSelectDate }) {
   const currentDate = today || localToday();
   const [visibleMonth, setVisibleMonth] = useState(() => firstDayOfMonth(currentDate));
-  const [googleState, setGoogleState] = useState({ loading: true, connected: false, events: [], error: '' });
+  const [googleState, setGoogleState] = useState({ loading: true, connected: false, events: [], error: '', needsAdditionalPermission: false, calendarCount: 0 });
   const [reload, setReload] = useState(0);
 
   useEffect(() => {
@@ -71,7 +71,14 @@ export default function AgendaCalendar({ localEvents, selectedDate, today, onSel
     }).then(async response => {
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || 'Não foi possível carregar o Google Calendar.');
-      setGoogleState({ loading: false, connected: Boolean(data.connected), events: data.events || [], error: '' });
+      setGoogleState({
+        loading: false,
+        connected: Boolean(data.connected),
+        events: data.events || [],
+        error: '',
+        needsAdditionalPermission: Boolean(data.needsAdditionalPermission),
+        calendarCount: Number(data.calendarCount) || 0,
+      });
     }).catch(failure => {
       if (failure.name !== 'AbortError') setGoogleState(current => ({ ...current, loading: false, error: failure.message }));
     });
@@ -127,7 +134,15 @@ export default function AgendaCalendar({ localEvents, selectedDate, today, onSel
         <h2>{monthLabel(visibleMonth)}</h2>
         <div className={`calendar-source ${googleState.error ? 'error' : ''}`}>
           <CalendarSync size={14}/>
-          {googleState.loading ? 'Atualizando Google Calendar...' : googleState.error ? googleState.error : googleState.connected ? 'Revisa e Google Calendar' : <a href="/perfil">Conecte o Google Calendar no seu perfil</a>}
+          {googleState.loading
+            ? 'Atualizando Google Calendar...'
+            : googleState.error
+              ? googleState.error
+              : googleState.connected
+                ? googleState.needsAdditionalPermission
+                  ? <a href="/perfil">Autorize todos os calendários no seu perfil</a>
+                  : `${googleState.calendarCount} ${googleState.calendarCount === 1 ? 'calendário conectado' : 'calendários conectados'}`
+                : <a href="/perfil">Conecte o Google Calendar no seu perfil</a>}
         </div>
       </div>
       <div className="calendar-controls">
@@ -146,15 +161,15 @@ export default function AgendaCalendar({ localEvents, selectedDate, today, onSel
           return <div className={`calendar-month-day ${outside ? 'outside' : ''} ${date === currentDate ? 'today' : ''} ${date === selectedDate ? 'selected' : ''}`} role="gridcell" key={date}>
             <button type="button" className="calendar-day-number" onClick={() => selectDay(date)} aria-label={`Filtrar agenda em ${date}`} aria-pressed={date === selectedDate}>{Number(date.slice(8, 10))}</button>
             <div className="calendar-day-events">
-              {entries.slice(0, 3).map(entry => entry.source === 'google' && entry.link
-                ? <a className="calendar-month-event google" href={entry.link} target="_blank" rel="noreferrer" title={entry.title} key={`${entry.id}-${date}`}>{entry.time&&<span className="event-time">{entry.time}</span>}<span className="event-title">{entry.title}</span><ExternalLink size={11}/></a>
+              {entries.slice(0, 2).map(entry => entry.source === 'google' && entry.link
+                ? <a className="calendar-month-event google" href={entry.link} target="_blank" rel="noreferrer" title={`${entry.title}${entry.calendarName ? ` — ${entry.calendarName}` : ''}`} key={`${entry.id}-${date}`}>{entry.time&&<span className="event-time">{entry.time}</span>}<span className="event-title">{entry.title}</span><ExternalLink size={11}/></a>
                 : <button type="button" className={`calendar-month-event ${entry.source} ${entry.source === 'revisa' ? `color-${entry.colorIndex}` : ''}`} onClick={() => selectDay(date)} title={entry.title} key={`${entry.id}-${date}`}>{entry.time&&<span className="event-time">{entry.time}</span>}<span className="event-title">{entry.title}</span></button>)}
-              {entries.length > 3 && <button type="button" className="calendar-more" onClick={() => selectDay(date)}>+{entries.length - 3} eventos</button>}
+              {entries.length > 2 && <button type="button" className="calendar-more" onClick={() => selectDay(date)}>+{entries.length - 2} eventos</button>}
             </div>
           </div>;
         })}
       </div>
     </div>
-    <div className="calendar-legend"><span><i className="revisa"/>Revisões do Revisa</span>{googleState.connected && <span><i className="google"/>Outros eventos do Google Calendar</span>}</div>
+    <div className="calendar-legend"><span><i className="revisa"/>Revisões do Revisa</span>{googleState.connected && <span><i className="google"/>Eventos dos calendários Google</span>}</div>
   </section>;
 }

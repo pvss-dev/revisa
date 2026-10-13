@@ -91,8 +91,9 @@ export default function GoogleCalendarSettings({ notify }) {
           <div className="integration-state success"><CheckCircle2 size={22}/><div><b>Sincronização ativa</b><span>{status.email || 'Conta Google conectada'}</span></div></div>
           <dl><div><dt>Última sincronização</dt><dd>{syncDate(status.lastSyncAt)}</dd></div><div><dt>Operações pendentes</dt><dd>{status.pending}</dd></div></dl>
         </div>
+        {!status.canReadAllCalendars && <div className="integration-state warning"><AlertCircle size={20}/><div><b>Autorize a leitura dos seus calendários</b><span>Atualize a permissão para exibir na Agenda os eventos de todos os calendários da conta, incluindo feriados e calendários assinados.</span></div></div>}
         {status.lastError && <div className="integration-state error" role="alert"><AlertCircle size={20}/><div><b>Falha na última sincronização</b><span>{status.lastError}</span></div></div>}
-        <div className="integration-actions"><button type="button" className="button secondary danger" disabled={busy} onClick={disconnect}><Unlink size={17}/> Desconectar</button><button type="button" className="button primary" disabled={busy} onClick={synchronize}><RefreshCw size={17} className={busy ? 'spinning' : ''}/>{busy ? 'Sincronizando...' : status.lastError || status.pending ? 'Tentar novamente' : 'Sincronizar agora'}</button></div>
+        <div className="integration-actions"><button type="button" className="button secondary danger" disabled={busy} onClick={disconnect}><Unlink size={17}/> Desconectar</button>{!status.canReadAllCalendars && <button type="button" className="button secondary" disabled={busy} onClick={() => window.location.assign('/api/integrations/google/connect')}><Link2 size={17}/> Autorizar calendários</button>}<button type="button" className="button primary" disabled={busy} onClick={synchronize}><RefreshCw size={17} className={busy ? 'spinning' : ''}/>{busy ? 'Sincronizando...' : status.lastError || status.pending ? 'Tentar novamente' : 'Sincronizar agora'}</button></div>
       </>}
       {error && <div className="form-error" role="alert">{error}</div>}
     </div>
