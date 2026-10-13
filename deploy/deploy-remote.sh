@@ -61,7 +61,17 @@ DOCKER_CONFIG=$(mktemp -d)
 export DOCKER_CONFIG
 printf '%s' "$GHCR_TOKEN" | docker login ghcr.io --username "$GHCR_USER" --password-stdin >/dev/null
 unset GHCR_TOKEN
-docker pull "$REVISA_IMAGE"
+pull_attempt=1
+while ! docker pull "$REVISA_IMAGE"; do
+  if [ "$pull_attempt" -ge 3 ]; then
+    echo 'Could not download the application image after 3 attempts.' >&2
+    exit 1
+  fi
+  delay=$((pull_attempt * 10))
+  echo "Image download failed. Trying again in ${delay}s..." >&2
+  sleep "$delay"
+  pull_attempt=$((pull_attempt + 1))
+done
 
 start_ok=true
 if [ "${RESTART:-false}" = true ]; then
