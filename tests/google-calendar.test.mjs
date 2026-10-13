@@ -1,10 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { decryptGoogleToken, encryptGoogleToken, googleEventId, reviewEventResource } from '../lib/google-calendar.js';
+import { decryptGoogleToken, encryptGoogleToken, googleApplicationOrigin, googleEventId, reviewEventResource } from '../lib/google-calendar.js';
 
 process.env.GOOGLE_CLIENT_ID = 'test-client';
 process.env.GOOGLE_CLIENT_SECRET = 'test-secret';
 process.env.GOOGLE_TOKEN_ENCRYPTION_KEY = 'test-encryption-key-that-is-never-used-in-production';
+process.env.GOOGLE_REDIRECT_URI = 'https://revisa.pvss.dev.br/api/integrations/google/callback';
+
+test('OAuth callback returns to the configured public application origin', () => {
+  assert.equal(googleApplicationOrigin('https://0.0.0.0:3000'), 'https://revisa.pvss.dev.br');
+});
 
 test('OAuth tokens are encrypted before persistence', () => {
   const encrypted = encryptGoogleToken('refresh-token-value');

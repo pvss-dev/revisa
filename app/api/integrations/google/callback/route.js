@@ -1,13 +1,13 @@
 import { cookies } from 'next/headers';
 import { after } from 'next/server';
 import { authenticated } from '@/lib/http';
-import { exchangeGoogleCode, googleAccountEmail, saveGoogleConnection, processCalendarJob, queueFullSync } from '@/lib/google-calendar';
+import { exchangeGoogleCode, googleAccountEmail, googleApplicationOrigin, saveGoogleConnection, processCalendarJob, queueFullSync } from '@/lib/google-calendar';
 
 export const dynamic = 'force-dynamic';
 const stateCookie = 'revisa_google_oauth_state';
 
 function profileRedirect(request, result) {
-  const url = new URL('/perfil', request.url);
+  const url = new URL('/perfil', googleApplicationOrigin(request.url));
   url.searchParams.set('google', result);
   return Response.redirect(url);
 }
