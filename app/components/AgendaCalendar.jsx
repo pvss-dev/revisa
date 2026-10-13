@@ -140,7 +140,7 @@ export default function AgendaCalendar({ localEvents, selectedDate, today, onSel
               ? googleState.error
               : googleState.connected
                 ? googleState.needsAdditionalPermission
-                  ? <a href="/perfil">Autorize todos os calendários no seu perfil</a>
+                  ? <a href="/api/integrations/google/connect">Autorizar calendários para exibir feriados</a>
                   : `${googleState.calendarCount} ${googleState.calendarCount === 1 ? 'calendário conectado' : 'calendários conectados'}`
                 : <a href="/perfil">Conecte o Google Calendar no seu perfil</a>}
         </div>
@@ -158,11 +158,24 @@ export default function AgendaCalendar({ localEvents, selectedDate, today, onSel
         {days.map(date => {
           const entries = entriesByDate.get(date) || [];
           const outside = !date.startsWith(visibleMonth.slice(0, 7));
-          return <div className={`calendar-month-day ${outside ? 'outside' : ''} ${date === currentDate ? 'today' : ''} ${date === selectedDate ? 'selected' : ''}`} role="gridcell" key={date}>
-            <button type="button" className="calendar-day-number" onClick={() => selectDay(date)} aria-label={`Filtrar agenda em ${date}`} aria-pressed={date === selectedDate}>{Number(date.slice(8, 10))}</button>
+          return <div
+            className={`calendar-month-day ${outside ? 'outside' : ''} ${date === currentDate ? 'today' : ''} ${date === selectedDate ? 'selected' : ''}`}
+            role="gridcell"
+            tabIndex={0}
+            aria-label={`Filtrar agenda em ${date}`}
+            aria-selected={date === selectedDate}
+            onClick={() => selectDay(date)}
+            onKeyDown={event => {
+              if (event.currentTarget !== event.target || (event.key !== 'Enter' && event.key !== ' ')) return;
+              event.preventDefault();
+              selectDay(date);
+            }}
+            key={date}
+          >
+            <span className="calendar-day-number" aria-hidden="true">{Number(date.slice(8, 10))}</span>
             <div className="calendar-day-events">
               {entries.slice(0, 2).map(entry => entry.source === 'google' && entry.link
-                ? <a className="calendar-month-event google" href={entry.link} target="_blank" rel="noreferrer" title={`${entry.title}${entry.calendarName ? ` — ${entry.calendarName}` : ''}`} key={`${entry.id}-${date}`}>{entry.time&&<span className="event-time">{entry.time}</span>}<span className="event-title">{entry.title}</span><ExternalLink size={11}/></a>
+                ? <a className="calendar-month-event google" href={entry.link} target="_blank" rel="noreferrer" onClick={event => event.stopPropagation()} title={`${entry.title}${entry.calendarName ? ` — ${entry.calendarName}` : ''}`} key={`${entry.id}-${date}`}>{entry.time&&<span className="event-time">{entry.time}</span>}<span className="event-title">{entry.title}</span><ExternalLink size={11}/></a>
                 : <button type="button" className={`calendar-month-event ${entry.source} ${entry.source === 'revisa' ? `color-${entry.colorIndex}` : ''}`} onClick={() => selectDay(date)} title={entry.title} key={`${entry.id}-${date}`}>{entry.time&&<span className="event-time">{entry.time}</span>}<span className="event-title">{entry.title}</span></button>)}
               {entries.length > 2 && <button type="button" className="calendar-more" onClick={() => selectDay(date)}>+{entries.length - 2} eventos</button>}
             </div>
