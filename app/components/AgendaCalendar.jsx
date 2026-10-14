@@ -140,7 +140,7 @@ export default function AgendaCalendar({ localEvents, selectedDate, today, onSel
               ? googleState.error
               : googleState.connected
                 ? googleState.needsAdditionalPermission
-                  ? <a href="/api/integrations/google/connect">Autorizar calendários para exibir feriados</a>
+                  ? 'Reconecte a conta Google pelo perfil para atualizar a integração'
                   : `${googleState.calendarCount} ${googleState.calendarCount === 1 ? 'calendário conectado' : 'calendários conectados'}`
                 : <a href="/perfil">Conecte o Google Calendar no seu perfil</a>}
         </div>

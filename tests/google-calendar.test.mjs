@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { decryptGoogleToken, encryptGoogleToken, googleApplicationOrigin, googleEventId, hasGoogleCalendarListScope, normalizeGoogleCalendarEvent, pendingReviewStages, reviewEventResource } from '../lib/google-calendar.js';
+import { decryptGoogleToken, encryptGoogleToken, googleApplicationOrigin, googleAuthorizationUrl, googleEventId, hasGoogleCalendarListScope, normalizeGoogleCalendarEvent, pendingReviewStages, reviewEventResource } from '../lib/google-calendar.js';
 
 process.env.GOOGLE_CLIENT_ID = 'test-client';
 process.env.GOOGLE_CLIENT_SECRET = 'test-secret';
@@ -9,6 +9,20 @@ process.env.GOOGLE_REDIRECT_URI = 'https://revisa.pvss.dev.br/api/integrations/g
 
 test('OAuth callback returns to the configured public application origin', () => {
   assert.equal(googleApplicationOrigin('https://0.0.0.0:3000'), 'https://revisa.pvss.dev.br');
+});
+
+test('initial Google connection requests event and calendar-list access together', () => {
+  const authorization = new URL(googleAuthorizationUrl({
+    state: 'test-state',
+    origin: 'https://revisa.pvss.dev.br',
+    loginHint: 'user@example.com',
+  }));
+  const scopes = authorization.searchParams.get('scope').split(' ');
+
+  assert.equal(scopes.includes('https://www.googleapis.com/auth/calendar.events'), true);
+  assert.equal(scopes.includes('https://www.googleapis.com/auth/calendar.calendarlist.readonly'), true);
+  assert.equal(authorization.searchParams.get('prompt'), 'consent');
+  assert.equal(authorization.searchParams.get('access_type'), 'offline');
 });
 
 test('OAuth tokens are encrypted before persistence', () => {
