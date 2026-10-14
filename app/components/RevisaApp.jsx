@@ -64,6 +64,15 @@ function todayLocal() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
+
+function GoogleMark() {
+  return <svg className="google-mark" viewBox="0 0 18 18" aria-hidden="true" focusable="false">
+    <path fill="#4285F4" d="M17.64 9.205c0-.638-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 0 1-1.797 2.716v2.258h2.909c1.702-1.567 2.684-3.874 2.684-6.614Z"/>
+    <path fill="#34A853" d="M9 18c2.43 0 4.468-.806 5.956-2.181l-2.909-2.258c-.806.54-1.835.859-3.047.859-2.344 0-4.328-1.585-5.037-3.714H.956v2.332A9 9 0 0 0 9 18Z"/>
+    <path fill="#FBBC05" d="M3.963 10.706A5.41 5.41 0 0 1 3.682 9c0-.592.102-1.167.281-1.706V4.962H.956A9 9 0 0 0 0 9c0 1.452.347 2.827.956 4.038l3.007-2.332Z"/>
+    <path fill="#EA4335" d="M9 3.58c1.321 0 2.507.454 3.441 1.346l2.581-2.581C13.464.892 11.43 0 9 0A9 9 0 0 0 .956 4.962l3.007 2.332C4.672 5.165 6.656 3.58 9 3.58Z"/>
+  </svg>;
+}
 function dateOnly(v) { return v ? String(v).slice(0,10) : null; }
 function formatDate(v, options = { day: '2-digit', month: 'short' }) {
   if (!v) return '—';
@@ -255,6 +264,16 @@ export default function RevisaApp({ initialView = 'overview' }) {
     const currentDate = todayLocal();
     setToday(currentDate);
     setAgendaSelectedDate(currentDate);
+    const authResult = new URLSearchParams(window.location.search).get('auth');
+    if (authResult) {
+      const messages = {
+        'google-denied': 'O acesso pelo Google foi cancelado.',
+        'google-invalid-state': 'A solicitação de acesso pelo Google expirou. Tente novamente.',
+        'google-failed': 'Não foi possível entrar com o Google. Tente novamente.',
+      };
+      setAuthError(messages[authResult] || 'Não foi possível concluir o acesso pelo Google.');
+      window.history.replaceState({}, '', window.location.pathname);
+    }
     api('/api/me').then(d => { setUser(d.user); setAppearance(appearanceFromUser(d.user)); if (d.user) refresh(); }).catch(() => setUser(null));
     return () => clearTimeout(toastTimer.current);
   }, []);
@@ -367,6 +386,8 @@ export default function RevisaApp({ initialView = 'overview' }) {
         <div className="auth-icon"><Sparkles size={24}/></div>
         <h2>{authMode === 'register' ? 'Comece por aqui' : 'Boas-vindas de volta'}</h2>
         <p>{authMode === 'register' ? 'Crie sua conta para organizar seus estudos.' : 'Entre para continuar de onde parou.'}</p>
+        <a className="google-auth-button" href="/api/auth/google"><GoogleMark/><span>Continuar com o Google</span></a>
+        <div className="auth-divider"><span>ou continue com e-mail</span></div>
         <form onSubmit={submitAuth} className="auth-form grid gap-[17px]">
           {authMode === 'register' && <label>Seu nome<input autoComplete="name" required minLength={2} maxLength={100} value={authFields.name} onChange={e => setAuthFields({ ...authFields, name: e.target.value })} placeholder="Como podemos chamar você?"/></label>}
           <label>E-mail<input type="email" autoComplete="email" required value={authFields.email} onChange={e => setAuthFields({ ...authFields, email: e.target.value })} placeholder="seuemail@exemplo.com"/></label>
@@ -465,7 +486,7 @@ export default function RevisaApp({ initialView = 'overview' }) {
         {view === 'settings' && <ReviewSettings initial={user.reviewOffsets || offsets.slice(1)} onSave={async reviewOffsets => { const result = await api('/api/settings/reviews', { method: 'PATCH', body: JSON.stringify({ reviewOffsets }) }); setUser(current => ({ ...current, reviewOffsets: result.reviewOffsets })); notify(syncedMessage(result, 'Intervalos atualizados. A agenda foi recalculada.')); }} />}
         {view === 'appearance' && <AppearanceSettings appearance={appearance} onPreview={setAppearance} onSave={saveAppearance}/>}
         <PomodoroTimer key={user.id} userId={user.id} visible={view === 'pomodoro'} onComplete={notify}/>
-        {view === 'profile' && <ProfileSettings user={user} notify={notify} onProfileSave={async details => { const result = await api('/api/me', { method: 'PATCH', body: JSON.stringify(details) }); setUser(result.user); notify('Perfil atualizado.'); }} onPasswordSave={async details => { await api('/api/me/password', { method: 'PUT', body: JSON.stringify(details) }); notify('Senha atualizada. As outras sessões foram encerradas.'); }} />}
+        {view === 'profile' && <ProfileSettings user={user} notify={notify} onProfileSave={async details => { const result = await api('/api/me', { method: 'PATCH', body: JSON.stringify(details) }); setUser(result.user); notify('Perfil atualizado.'); }} onPasswordSave={async details => { await api('/api/me/password', { method: 'PUT', body: JSON.stringify(details) }); setUser(current => ({ ...current, hasPassword: true })); notify(user.hasPassword ? 'Senha atualizada. As outras sessões foram encerradas.' : 'Senha criada. Agora você também pode entrar com e-mail e senha.'); }} />}
         {view === 'exams' && <>
           <div className="page-heading"><div><div className="eyebrow"><span className="eyebrow-dot"/> SIMULE, ANALISE, EVOLUA</div><h1>Provas completas</h1><p>Marque seus acertos questão por questão e acompanhe cada prova.</p></div><button className="button primary" onClick={() => setModal({ type:'exam' })}><Plus size={18}/> Nova prova</button></div>
           <div className="exam-intro"><div className="exam-intro-icon"><Target size={29}/></div><div><h3>O treino também conta</h3><p>Registre respostas certas e erradas. O percentual de acertos é calculado automaticamente.</p></div></div>
@@ -551,22 +572,23 @@ function ProfileSettings({ user, onProfileSave, onPasswordSave, notify }) {
   return <>
     <div className="page-heading"><div><div className="eyebrow"><span className="eyebrow-dot"/> SUA CONTA</div><h1>Meu perfil</h1><p>Atualize seus dados de acesso e como você aparece no Revisa.</p></div></div>
     <div className="profile-grid grid items-stretch gap-5">
-      <section className="panel settings-panel"><div className="settings-intro"><span className="modal-icon"><LockKeyhole size={22}/></span><div><h2>Alterar senha</h2><p>Uma nova senha encerra as sessões em outros dispositivos.</p></div></div>
+      <section className="panel settings-panel"><div className="settings-intro"><span className="modal-icon"><LockKeyhole size={22}/></span><div><h2>{user.hasPassword ? 'Alterar senha' : 'Criar senha'}</h2><p>{user.hasPassword ? 'Uma nova senha encerra as sessões em outros dispositivos.' : 'Crie uma senha para também entrar usando seu e-mail.'}</p></div></div>
         <form className="settings-form profile-form" onSubmit={savePassword}>
-          <label>Senha atual<input type="password" autoComplete="current-password" required value={passwords.currentPassword} onChange={e => setPasswords({ ...passwords, currentPassword: e.target.value })}/></label>
+          {user.hasPassword && <label>Senha atual<input type="password" autoComplete="current-password" required value={passwords.currentPassword} onChange={e => setPasswords({ ...passwords, currentPassword: e.target.value })}/></label>}
           <label>Nova senha<input type="password" autoComplete="new-password" required minLength={10} maxLength={128} value={passwords.newPassword} onChange={e => setPasswords({ ...passwords, newPassword: e.target.value })} placeholder="Mínimo de 10 caracteres"/></label>
           <label>Confirmar nova senha<input type="password" autoComplete="new-password" required minLength={10} maxLength={128} value={passwords.confirmPassword} onChange={e => setPasswords({ ...passwords, confirmPassword: e.target.value })}/></label>
           {passwordError && <div className="form-error" role="alert">{passwordError}</div>}
-          <button className="button primary settings-save" disabled={passwordBusy}>{passwordBusy ? 'Atualizando...' : 'Atualizar senha'} <Check size={17}/></button>
+          <button className="button primary settings-save" disabled={passwordBusy}>{passwordBusy ? 'Salvando...' : user.hasPassword ? 'Atualizar senha' : 'Criar senha'} <Check size={17}/></button>
         </form>
       </section>
       <section className="panel settings-panel"><div className="settings-intro"><span className="modal-icon"><UserRound size={22}/></span><div><h2>Informações pessoais</h2><p>Seu nome e e-mail de acesso.</p></div></div>
         <form className="settings-form profile-form" onSubmit={saveDetails}>
           <label>Nome<input autoComplete="name" required minLength={2} maxLength={100} value={details.name} onChange={e => setDetails({ ...details, name: e.target.value })}/></label>
           <label>E-mail<input type="email" autoComplete="email" required maxLength={254} value={details.email} onChange={e => setDetails({ ...details, email: e.target.value })}/></label>
-          {emailChanged && <><label>Senha atual<input type="password" autoComplete="current-password" required value={details.currentPassword} onChange={e => setDetails({ ...details, currentPassword: e.target.value })}/></label><div className="info-note"><LockKeyhole size={17}/><span>Para alterar seu e-mail de acesso, confirme sua senha atual.</span></div></>}
+          {emailChanged && user.hasPassword && <><label>Senha atual<input type="password" autoComplete="current-password" required value={details.currentPassword} onChange={e => setDetails({ ...details, currentPassword: e.target.value })}/></label><div className="info-note"><LockKeyhole size={17}/><span>Para alterar seu e-mail de acesso, confirme sua senha atual.</span></div></>}
+          {emailChanged && !user.hasPassword && <div className="info-note"><LockKeyhole size={17}/><span>Crie uma senha antes de alterar o e-mail de acesso.</span></div>}
           {detailsError && <div className="form-error" role="alert">{detailsError}</div>}
-          <button className="button primary settings-save" disabled={detailsBusy || (!emailChanged && details.name.trim() === user.name)}>{detailsBusy ? 'Salvando...' : 'Salvar informações'} <Check size={17}/></button>
+          <button className="button primary settings-save" disabled={detailsBusy || (emailChanged && !user.hasPassword) || (!emailChanged && details.name.trim() === user.name)}>{detailsBusy ? 'Salvando...' : 'Salvar informações'} <Check size={17}/></button>
         </form>
       </section>
       <GoogleCalendarSettings notify={notify}/>

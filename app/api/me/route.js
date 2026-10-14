@@ -1,4 +1,4 @@
-import { getUser, verifyPassword, publicUserSelect } from '@/lib/auth';
+import { authenticatedUserSelect, getUser, publicUser, verifyPassword } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { authenticated, bodyJson, error, safeMutation } from '@/lib/http';
 
@@ -21,6 +21,7 @@ export async function PATCH(request) {
   if (email !== user.email) {
     if (typeof body.currentPassword !== 'string' || !body.currentPassword) return error('Informe sua senha atual para alterar o e-mail.');
     const account = await prisma.user.findUnique({ where: { id: user.id }, select: { passwordHash: true } });
+    if (!account?.passwordHash) return error('Crie uma senha no perfil antes de alterar o e-mail.', 409);
     if (!account || !verifyPassword(body.currentPassword, account.passwordHash)) return error('Senha atual incorreta.', 401);
   }
 
@@ -28,9 +29,9 @@ export async function PATCH(request) {
     const updated = await prisma.user.update({
       where: { id: user.id },
       data: { name, email },
-      select: publicUserSelect,
+      select: authenticatedUserSelect,
     });
-    return Response.json({ user: updated }, { headers: { 'Cache-Control': 'no-store' } });
+    return Response.json({ user: publicUser(updated) }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (e) {
     if (e.code === 'P2002') return error('Este e-mail já está cadastrado.', 409);
     throw e;

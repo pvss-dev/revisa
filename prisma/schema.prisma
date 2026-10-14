@@ -10,7 +10,8 @@ model User {
   id                       Int                       @id @default(autoincrement())
   name                     String
   email                    String                    @unique
-  passwordHash             String                    @map("password_hash")
+  passwordHash             String?                   @map("password_hash")
+  googleSubject            String?                   @unique @map("google_subject")
   reviewOffsets            Int[]                     @default([7, 21, 60, 100]) @map("review_offsets")
   appearanceTheme          String                    @default("light") @map("appearance_theme")
   accentColor              String                    @default("#246D54") @map("accent_color")

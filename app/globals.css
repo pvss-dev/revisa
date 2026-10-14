@@ -10,6 +10,31 @@
 }
 
 @layer components {
+  .google-auth-button {
+    width: 100%;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 0 16px;
+    border: 1px solid #747775;
+    border-radius: 10px;
+    background: #ffffff;
+    color: #1f1f1f;
+    font: 500 14px/20px Arial, sans-serif;
+    text-decoration: none;
+    transition: background .15s, box-shadow .15s;
+  }
+  .google-auth-button:hover { background: #f8faff; box-shadow: 0 1px 2px rgba(60, 64, 67, .18); }
+  .google-auth-button:focus-visible { outline: 2px solid #246d54; outline-offset: 2px; }
+  .google-mark { width: 18px; height: 18px; flex: none; }
+  .auth-divider { display: flex; align-items: center; gap: 13px; margin: 22px 0; color: var(--muted); font-size: 11px; }
+  .auth-divider::before, .auth-divider::after { content: ''; height: 1px; flex: 1; background: var(--border, #e1e9df); }
+  .auth-divider span { white-space: nowrap; }
+}
+
+@layer components {
   .google-calendar-panel { grid-column: 1 / -1; }
   .google-calendar-content { display: grid; gap: 18px; padding: 28px; }
   .integration-loading,

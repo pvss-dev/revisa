@@ -10,10 +10,13 @@ export async function PUT(request) {
   const body = await bodyJson(request);
   if (!body || typeof body.currentPassword !== 'string' || typeof body.newPassword !== 'string') return error('Dados inválidos.');
   if (body.newPassword.length < 10 || body.newPassword.length > 128) return error('A nova senha deve ter entre 10 e 128 caracteres.');
-  if (body.newPassword === body.currentPassword) return error('Escolha uma senha diferente da atual.');
 
   const account = await prisma.user.findUnique({ where: { id: user.id }, select: { passwordHash: true } });
-  if (!account || !verifyPassword(body.currentPassword, account.passwordHash)) return error('Senha atual incorreta.', 401);
+  if (!account) return error('Conta não encontrada.', 404);
+  if (account.passwordHash) {
+    if (body.newPassword === body.currentPassword) return error('Escolha uma senha diferente da atual.');
+    if (!verifyPassword(body.currentPassword, account.passwordHash)) return error('Senha atual incorreta.', 401);
+  }
 
   await prisma.$transaction([
     prisma.user.update({ where: { id: user.id }, data: { passwordHash: hashPassword(body.newPassword) } }),

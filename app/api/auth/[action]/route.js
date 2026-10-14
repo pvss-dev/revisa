@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db';
-import { hashPassword, verifyPassword, issueSession, removeSession, publicUser, publicUserSelect } from '@/lib/auth';
+import { authenticatedUserSelect, hashPassword, verifyPassword, issueSession, removeSession, publicUser } from '@/lib/auth';
 import { bodyJson, error, safeMutation } from '@/lib/http';
 
 export async function POST(request, { params }) {
@@ -24,16 +24,17 @@ export async function POST(request, { params }) {
     try {
       const user = await prisma.user.create({
         data: { name, email, passwordHash: hashPassword(password) },
-        select: publicUserSelect,
+        select: authenticatedUserSelect,
       });
       await issueSession(user.id);
-      return Response.json({ user }, { status: 201 });
+      return Response.json({ user: publicUser(user) }, { status: 201 });
     } catch (e) {
       if (e.code === 'P2002') return error('Este e-mail já está cadastrado.', 409);
       throw e;
     }
   }
   const user = await prisma.user.findUnique({ where: { email } });
+  if (user && !user.passwordHash) return error('Esta conta usa acesso pelo Google. Entre com o Google ou crie uma senha no perfil.', 401);
   if (!user || !verifyPassword(password, user.passwordHash)) return error('E-mail ou senha incorretos.', 401);
   await issueSession(user.id);
   return Response.json({ user: publicUser(user) });
