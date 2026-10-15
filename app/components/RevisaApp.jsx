@@ -396,6 +396,7 @@ export default function RevisaApp({ initialView = 'overview' }) {
           <button className="button primary full" disabled={authBusy}>{authBusy ? 'Aguarde...' : authMode === 'register' ? 'Criar minha conta' : 'Entrar na minha conta'} <ArrowRight size={18}/></button>
         </form>
         <div className="auth-switch">{authMode === 'register' ? 'Já tem uma conta?' : 'Ainda não tem uma conta?'} <button onClick={() => { setAuthMode(authMode === 'register' ? 'login' : 'register'); setAuthError(''); }}>{authMode === 'register' ? 'Entrar' : 'Cadastre-se'}</button></div>
+        <nav className="auth-legal-links" aria-label="Documentos legais"><a href="/privacidade">Privacidade</a><span aria-hidden="true">•</span><a href="/termos">Termos</a></nav>
       </div>
     </div>
   </div>;
